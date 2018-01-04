@@ -72,6 +72,13 @@ sudo sed -i 's/ntp\.buildd/0\.us\.pool\.ntp\.org/g' \
   --series=xenial --arch=amd64 LIVEFSBUILD-109067
 EOF
 
+
+# Inject squid proxy config in the LXC if one exists in the host.
+SQUID_APT_CONFIG=/etc/apt/apt.conf.d/30squid-proxy
+if [ -f $SQUID_APT_CONFIG ] ; then
+	lxc file push $SQUID_APT_CONFIG lp-xenial-amd64$SQUID_APT_CONFIG
+fi
+
 sudo su - buildd -- <<"EOF"
 set -xe
 export PYTHONPATH=/usr/lib/launchpad-buildd
