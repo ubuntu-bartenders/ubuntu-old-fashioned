@@ -29,3 +29,15 @@ This was tried on GCE, launching an instance with the following command:
 ```bash
 gcloud compute instances create --image-family=ubuntu-1604-lts --image-project=ubuntu-os-cloud "builder-$(date +%y%m%d-%H%M)" --machine-type n1-highcpu-2 --tags "test" --boot-disk-size 200GiB --zone us-central1-b
 ```
+
+## Example
+
+The most simple example to build all ubuntu-cpc images from scratch is:
+
+```bash
+bzr co lp:livecd-rootfs
+cd livecd-rootfs
+sudo build-from-tree
+```
+
+This should build everything in 3 minutes-ish.
