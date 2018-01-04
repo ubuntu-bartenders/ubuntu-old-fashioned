@@ -1,0 +1,6 @@
+This script is meant to let you run livecd-rootfs builds "locally" - your local
+machine or a virtual machine running somewhere.
+
+This was tried on GCE, launching an instance with the following command:
+
+gcloud compute instances create --image-family=ubuntu-1604-lts --image-project=ubuntu-os-cloud "builder-$(date +%y%m%d-%H%M)" --machine-type n1-highcpu-2 --tags "test" --boot-disk-size 200GiB --zone us-central1-b

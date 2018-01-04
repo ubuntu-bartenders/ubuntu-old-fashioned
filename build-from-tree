@@ -1,0 +1,141 @@
+#!/bin/bash -xe
+
+# This should be put in your PATH and then invoked (as root) from a checkout
+# of livecd-rootfs that you'd like to build.
+
+# Original user-data script by rcj, weaponized by tribaal
+
+# TODO: Add parameter for other series. Right now it's xenial only.
+# TODO: Add an option for minimzed builds.
+# TODO: add a failfast if the PWD doesn't have the required structure.
+# TODO: Reuse buildd environment if found.
+
+if [ $UID != 0 ] ; then
+    echo "You must run this script as root."
+    echo "It needs to install packages and modprobe overlay"
+    exit 1 
+fi
+
+if [ $(lsb_release -s -c) == "bionic" ] ; then
+    echo "This currently doesn't work on bionic. Please run this on xenial."
+    exit 1
+fi
+
+# TODO: Skip over adding PPA and installing if packages are already installed.
+# The launchpad PPA has launchpad-buildd and some of its dependencies.
+sudo add-apt-repository -y -u ppa:launchpad/ppa
+sudo apt install -y launchpad-buildd bzr python-ubuntutools
+
+# Load overlayfs kernel module for MAAS
+# XXX: Not 100% sure we want this since I'm not sure we will want to build MAAS
+# as part of local dev. ~tribaal
+sudo modprobe overlay
+
+UAT_CHECKOUT=/tmp/uat
+CHROOT_ARCHIVE_NAME=chroot-ubuntu-xenial-amd64.tar.bz
+CHROOT_ARCHIVE=/tmp/$CHROOT_ARCHIVE_NAME
+
+# Get the chroot filesystem from Launchpad if there isn't already one locally
+# we could reuse.
+if ! [ -f $CHROOT_ARCHIVE ] ; then
+    echo "Downloading chroot filesystem from launchpad."
+    bzr branch lp:~ubuntu-archive/ubuntu-archive-tools/trunk $UAT_CHECKOUT
+    $UAT_CHECKOUT/manage-chroot -a amd64 -s xenial info
+    $UAT_CHECKOUT/manage-chroot -a amd64 -s xenial -f $CHROOT_ARCHIVE get
+else
+    echo "Reusing chroot tarball $CHROOT_ARCHIVE"
+fi
+
+# Copy and install the chroot tarball.
+# XXX: Do we need that chmod? ~tribaal
+sudo su - buildd -- <<EOF
+set -xe
+# Copy the chroot filesystem to the filecache
+cp $CHROOT_ARCHIVE filecache-default/
+
+sudo chmod o+w /run
+EOF
+
+# Set the time with NTP, untar the chroot, mount it.
+sudo su - buildd -- <<EOF
+set -xe
+export PYTHONPATH=/usr/lib/launchpad-buildd
+# Use a public NTP server
+sudo sed -i 's/ntp\.buildd/0\.us\.pool\.ntp\.org/g' \
+  /etc/launchpad-buildd/default
+
+/usr/share/launchpad-buildd/slavebin/slave-prep
+/usr/share/launchpad-buildd/slavebin/in-target unpack-chroot --backend=lxd \
+  --series=xenial --arch=amd64 LIVEFSBUILD-109067 \
+  /home/buildd/filecache-default/$CHROOT_ARCHIVE_NAME
+/usr/share/launchpad-buildd/slavebin/in-target mount-chroot --backend=lxd \
+  --series=xenial --arch=amd64 LIVEFSBUILD-109067
+EOF
+
+sudo su - buildd -- <<"EOF"
+set -xe
+export PYTHONPATH=/usr/lib/launchpad-buildd
+# Use the same apt mirror as the host
+export MIRROR=$(grep archive /etc/apt/sources.list|head -1 | \
+               cut -d' ' -f2 | cut -d'/' -f3)
+/usr/share/launchpad-buildd/slavebin/in-target override-sources-list \
+  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067 \
+    "deb http://$MIRROR/ubuntu xenial main restricted universe multiverse" \
+    "deb http://$MIRROR/ubuntu xenial-security main restricted universe multiverse" \
+    "deb http://$MIRROR/ubuntu xenial-updates main restricted universe multiverse"
+
+/usr/share/launchpad-buildd/slavebin/in-target update-debian-chroot \
+  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067
+EOF
+
+# Inject the files from the current tree in the right place in the LXD
+# container.
+lxc exec lp-xenial-amd64 -- mkdir /usr/share/livecd-rootfs
+lxc file push get-ppa-fingerprint lp-xenial-amd64/usr/share/livecd-rootfs/
+# Old LXCs don't have recursive push... so we tar and untar instead.
+tar czvf /tmp/live-build.tar.gz live-build/
+lxc file push /tmp/live-build.tar.gz lp-xenial-amd64/usr/share/livecd-rootfs/
+lxc exec lp-xenial-amd64 -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.gz -C /usr/share/livecd-rootfs/
+
+# Actually build.
+sudo su - buildd -- <<"EOF"
+set -xe
+export PYTHONPATH=/usr/lib/launchpad-buildd
+time /usr/share/launchpad-buildd/slavebin/in-target buildlivefs \
+  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067 \
+  --project ubuntu-cpc --datestamp 20170906.2 --image-format ext4
+EOF
+
+echo "Copying files out to build.output/"
+cd
+rm -rf build.output
+mkdir build.output/
+lxc file pull lp-xenial-amd64/build/binary.log build.output/;
+time for FILE in `lxc exec lp-xenial-amd64 -- find /build -mindepth 1 \
+                  \! -type d \! -type l -name 'livecd.*' -print`; do
+    echo $FILE
+    lxc file pull lp-xenial-amd64$FILE build.output/
+done
+
+# From here on it's cleanup
+
+#sudo su - buildd -- <<"EOF"
+#set -xe
+#export PYTHONPATH=/usr/lib/launchpad-buildd
+#time /usr/share/launchpad-buildd/slavebin/in-target scan-for-processes \
+#  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067
+#EOF
+
+#sudo su - buildd -- <<"EOF"
+#set -xe
+#export PYTHONPATH=/usr/lib/launchpad-buildd
+#time /usr/share/launchpad-buildd/slavebin/in-target umount-chroot \
+#  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067
+#EOF
+
+#sudo su - buildd -- <<"EOF"
+#set -xe
+#export PYTHONPATH=/usr/lib/launchpad-buildd
+#time /usr/share/launchpad-buildd/slavebin/in-target remove-build \
+#  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067
+#EOF
