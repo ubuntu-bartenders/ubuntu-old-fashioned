@@ -77,6 +77,7 @@ EOF
 SQUID_APT_CONFIG=/etc/apt/apt.conf.d/30squid-proxy
 if [ -f $SQUID_APT_CONFIG ] ; then
 	lxc file push $SQUID_APT_CONFIG lp-xenial-amd64$SQUID_APT_CONFIG
+	lxc file push $SQUID_APT_CONFIG lp-xenial-amd64/build/chroot$SQUID_APT_CONFIG
 fi
 
 sudo su - buildd -- <<"EOF"
