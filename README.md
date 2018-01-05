@@ -40,4 +40,4 @@ cd livecd-rootfs
 sudo build-from-tree
 ```
 
-This should build everything in 3 minutes-ish.
+This should build everything in 30 minutes-ish.
