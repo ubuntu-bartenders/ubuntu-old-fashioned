@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash
 
 # This should be put in your PATH and then invoked (as root) from a checkout
 # of livecd-rootfs that you'd like to build.
@@ -6,9 +6,37 @@
 # Original user-data script by rcj, weaponized by tribaal
 
 # TODO: Add parameter for other series. Right now it's xenial only.
-# TODO: Add an option for minimzed builds.
-# TODO: add a failfast if the PWD doesn't have the required structure.
 # TODO: Reuse buildd environment if found.
+
+getopt --test > /dev/null
+if [[ $? -ne 4 ]]; then
+    echo "Can't use getopt in this environment unfortunately."
+    exit 1
+fi
+
+OPTIONS=
+LONGOPTIONS=minimized
+PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
+if [[ $? -ne 0 ]]; then
+    exit 2
+fi
+
+eval set -- "$PARSED"
+
+MINIMIZED=""
+
+while true; do
+    case "$1" in
+        --minimized)
+            MINIMIZED="--subproject minimized"
+            shift
+            ;;
+        *)
+            shift
+            break
+            ;;
+    esac
+done
 
 if [ $UID != 0 ] ; then
     echo "You must run this script as root."
@@ -20,6 +48,18 @@ if [ $(lsb_release -s -c) == "bionic" ] ; then
     echo "This currently doesn't work on bionic. Please run this on xenial."
     exit 1
 fi
+
+if ! [ -f get-ppa-fingerprint ] || ! [ -d live-build ] ; then
+    echo 'Cannot find the expected livecd-rootfs tree structure in $PWD.'
+    echo 'Are you sure you are running this from a livecd-rootfs branch?'
+    exit 1
+fi
+
+# Setup code
+#*******************
+# The real script
+
+set -xe
 
 # TODO: Skip over adding PPA and installing if packages are already installed.
 # The launchpad PPA has launchpad-buildd and some of its dependencies.
@@ -109,12 +149,12 @@ lxc file push /tmp/live-build.tar.gz lp-xenial-amd64/usr/share/livecd-rootfs/
 lxc exec lp-xenial-amd64 -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.gz -C /usr/share/livecd-rootfs/
 
 # Actually build.
-sudo su - buildd -- <<"EOF"
+sudo su - buildd -- <<EOF
 set -xe
 export PYTHONPATH=/usr/lib/launchpad-buildd
 time /usr/share/launchpad-buildd/slavebin/in-target buildlivefs \
   --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067 \
-  --project ubuntu-cpc --datestamp 20170906.2 --image-format ext4
+  --project ubuntu-cpc $MINIMIZED --datestamp 20170906.2 --image-format ext4
 EOF
 
 echo "Copying files out to build.output/"
