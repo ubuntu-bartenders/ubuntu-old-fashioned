@@ -1,5 +1,12 @@
 # Ubuntu old fashioned
 
+Sometimes you don't want the modern comfort of a distributed build system.
+Sometimes just just want to look at a directory and be like "build this now".
+Sometimes you don't want to use this scary newfangled "cloud" thing.
+Sometimes you're in the mood for something nice and sequential.
+
+Well look no more!
+
 This script is meant to let you build ubuntu cloud images locally from a
 livecd-rootfs checkout.
 
