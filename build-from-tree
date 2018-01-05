@@ -74,10 +74,13 @@ EOF
 
 
 # Inject squid proxy config in the LXC if one exists in the host.
+# TODO: Inject the proxy configuration in the *chroot* as well, since it seems
+# like it's not taken from the host LXD.
 SQUID_APT_CONFIG=/etc/apt/apt.conf.d/30squid-proxy
 if [ -f $SQUID_APT_CONFIG ] ; then
 	lxc file push $SQUID_APT_CONFIG lp-xenial-amd64$SQUID_APT_CONFIG
-	lxc file push $SQUID_APT_CONFIG lp-xenial-amd64/build/chroot$SQUID_APT_CONFIG
+    # The following doesn't work since the chroot directory is not yet created.
+	#lxc file push $SQUID_APT_CONFIG lp-xenial-amd64/build/chroot$SQUID_APT_CONFIG
 fi
 
 sudo su - buildd -- <<"EOF"
