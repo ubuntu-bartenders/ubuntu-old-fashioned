@@ -17,7 +17,7 @@ livecd-rootfs checkout.
 
 - Add this script to your path, e.g. /usr/local/bin
 - as root (sorry), cd to your livecd-rootfs checkout
-- Invoke "build-from-tree"
+- Invoke "old-fashioned-image-build"
 
 The images will be built and copied to your $HOME in a "build.output/" folder.
 
@@ -47,7 +47,7 @@ The most simple example to build all ubuntu-cpc images from scratch is:
 ```bash
 bzr co lp:livecd-rootfs
 cd livecd-rootfs
-sudo build-from-tree
+sudo old-fashioned-image-build
 ```
 
 This should build everything in 30 minutes-ish.
