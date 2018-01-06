@@ -82,10 +82,6 @@ else
     echo "Reusing chroot tarball $CHROOT_ARCHIVE"
 fi
 
-# Copy and install the chroot tarball.
-# XXX: Do we need that chmod? ~tribaal
-#sudo chmod o+w /run
-
 # Set the time with NTP, untar the chroot, mount it.
 # Use a public NTP server
 # TODO: Use a geolocal NTP pool
