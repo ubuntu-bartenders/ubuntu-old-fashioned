@@ -86,9 +86,6 @@ fi
 # XXX: Do we need that chmod? ~tribaal
 sudo su - buildd -- <<EOF
 set -xe
-# Copy the chroot filesystem to the filecache
-cp $CHROOT_ARCHIVE filecache-default/
-
 sudo chmod o+w /run
 EOF
 
@@ -102,8 +99,7 @@ sudo sed -i 's/ntp\.buildd/0\.us\.pool\.ntp\.org/g' \
 
 /usr/share/launchpad-buildd/slavebin/slave-prep
 /usr/share/launchpad-buildd/slavebin/in-target unpack-chroot --backend=lxd \
-  --series=xenial --arch=amd64 LIVEFSBUILD-109067 \
-  /home/buildd/filecache-default/$CHROOT_ARCHIVE_NAME
+  --series=xenial --arch=amd64 LIVEFSBUILD-109067 $CHROOT_ARCHIVE
 /usr/share/launchpad-buildd/slavebin/in-target mount-chroot --backend=lxd \
   --series=xenial --arch=amd64 LIVEFSBUILD-109067
 EOF
