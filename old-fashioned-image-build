@@ -7,7 +7,6 @@
 
 # TODO: Add parameter for other series. Right now it's xenial only.
 # TODO: Reuse buildd environment if found.
-# TODO: Export bzr tree for uat instead of cloning... we don't care here
 
 getopt --test > /dev/null
 if [[ $? -ne 4 ]]; then
@@ -76,7 +75,7 @@ OUTPUT_DIRECTORY=~/build.output
 # we could reuse.
 if ! [ -f $CHROOT_ARCHIVE ] ; then
     echo "Downloading chroot filesystem from launchpad."
-    bzr branch lp:~ubuntu-archive/ubuntu-archive-tools/trunk $UAT_CHECKOUT
+    bzr export $UAT_CHECKOUT lp:~ubuntu-archive/ubuntu-archive-tools/trunk
     $UAT_CHECKOUT/manage-chroot -a amd64 -s xenial info
     $UAT_CHECKOUT/manage-chroot -a amd64 -s xenial -f $CHROOT_ARCHIVE get
 else
