@@ -70,6 +70,7 @@ set -xe
 UAT_CHECKOUT=/tmp/uat
 CHROOT_ARCHIVE_NAME=chroot-ubuntu-xenial-amd64.tar.bz
 CHROOT_ARCHIVE=/tmp/$CHROOT_ARCHIVE_NAME
+OUTPUT_DIRECTORY=~/build.output
 
 # Get the chroot filesystem from Launchpad if there isn't already one locally
 # we could reuse.
@@ -93,7 +94,6 @@ sudo sed -i 's/ntp\.buildd/0\.us\.pool\.ntp\.org/g' \
   --series=xenial --arch=amd64 LIVEFSBUILD-109067 $CHROOT_ARCHIVE
 /usr/share/launchpad-buildd/slavebin/in-target mount-chroot --backend=lxd \
   --series=xenial --arch=amd64 LIVEFSBUILD-109067
-
 
 # Inject squid proxy config in the LXC if one exists in the host.
 SQUID_APT_CONFIG=/etc/apt/apt.conf.d/30squid-proxy
@@ -126,15 +126,14 @@ time /usr/share/launchpad-buildd/slavebin/in-target buildlivefs \
   --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067 \
   --project ubuntu-cpc $MINIMIZED --datestamp 20170906.2 --image-format ext4
 
-echo "Copying files out to build.output/"
-cd
-rm -rf build.output
-mkdir build.output/
-lxc file pull lp-xenial-amd64/build/binary.log build.output/;
+echo "Copying files out to $OUTPUT_DIRECTORY"
+rm -rf $OUTPUT_DIRECTORY
+mkdir $OUTPUT_DIRECTORY
+lxc file pull lp-xenial-amd64/build/binary.log $OUTPUT_DIRECTORY/;
 time for FILE in `lxc exec lp-xenial-amd64 -- find /build -mindepth 1 \
                   \! -type d \! -type l -name 'livecd.*' -print`; do
     echo $FILE
-    lxc file pull lp-xenial-amd64$FILE build.output/
+    lxc file pull lp-xenial-amd64$FILE $OUTPUT_DIRECTORY/
 done
 
 # From here on it's cleanup
