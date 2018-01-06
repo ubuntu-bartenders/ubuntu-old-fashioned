@@ -67,11 +67,6 @@ fi
 
 set -xe
 
-# Load overlayfs kernel module for MAAS
-# XXX: Not 100% sure we want this since I'm not sure we will want to build MAAS
-# as part of local dev. ~tribaal
-sudo modprobe overlay
-
 UAT_CHECKOUT=/tmp/uat
 CHROOT_ARCHIVE_NAME=chroot-ubuntu-xenial-amd64.tar.bz
 CHROOT_ARCHIVE=/tmp/$CHROOT_ARCHIVE_NAME
