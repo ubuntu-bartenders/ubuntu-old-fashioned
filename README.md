@@ -23,7 +23,7 @@ The images will be built and copied to your $HOME in a "build.output/" folder.
 
 ## Speeding things up a bit
 
-To speed up pacakge lookup you can install "squid-deb-proxy" on the host, then
+To speed up package lookup you can install "squid-deb-proxy" on the host, then
 point the host to its own proxy by adding a file like the following:
 
 ```bash
