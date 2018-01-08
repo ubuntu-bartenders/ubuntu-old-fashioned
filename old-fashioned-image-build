@@ -86,8 +86,7 @@ fi
 
 # Set the time with NTP, untar the chroot, mount it.
 # Use a public NTP server
-# TODO: Use a geolocal NTP pool
-sudo sed -i 's/ntp\.buildd/0\.us\.pool\.ntp\.org/g' \
+sudo sed -i 's/ntp\.buildd/0\.pool\.ntp\.org/g' \
   /etc/launchpad-buildd/default
 
 /usr/share/launchpad-buildd/slavebin/slave-prep
