@@ -70,6 +70,8 @@ UAT_CHECKOUT=/tmp/uat
 CHROOT_ARCHIVE_NAME=chroot-ubuntu-xenial-amd64.tar.bz
 CHROOT_ARCHIVE=/tmp/$CHROOT_ARCHIVE_NAME
 OUTPUT_DIRECTORY=~/build.output
+LIVEFS_NAME=LOCAL_IMAGES_BUILD
+SERIAL=$(date +%Y%m%d.%H%M)
 
 # Get the chroot filesystem from Launchpad if there isn't already one locally
 # we could reuse.
@@ -90,9 +92,9 @@ sudo sed -i 's/ntp\.buildd/0\.us\.pool\.ntp\.org/g' \
 
 /usr/share/launchpad-buildd/slavebin/slave-prep
 /usr/share/launchpad-buildd/slavebin/in-target unpack-chroot --backend=lxd \
-  --series=xenial --arch=amd64 LIVEFSBUILD-109067 $CHROOT_ARCHIVE
+  --series=xenial --arch=amd64 $LIVEFS_NAME $CHROOT_ARCHIVE
 /usr/share/launchpad-buildd/slavebin/in-target mount-chroot --backend=lxd \
-  --series=xenial --arch=amd64 LIVEFSBUILD-109067
+  --series=xenial --arch=amd64 $LIVEFS_NAME
 
 # Inject squid proxy config in the LXC if one exists in the host.
 SQUID_APT_CONFIG=/etc/apt/apt.conf.d/30squid-proxy
@@ -104,13 +106,13 @@ fi
 export MIRROR=$(grep archive /etc/apt/sources.list|head -1 | \
                cut -d' ' -f2 | cut -d'/' -f3)
 /usr/share/launchpad-buildd/slavebin/in-target override-sources-list \
-  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067 \
+  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME \
     "deb http://$MIRROR/ubuntu xenial main restricted universe multiverse" \
     "deb http://$MIRROR/ubuntu xenial-security main restricted universe multiverse" \
     "deb http://$MIRROR/ubuntu xenial-updates main restricted universe multiverse"
 
 /usr/share/launchpad-buildd/slavebin/in-target update-debian-chroot \
-  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067
+  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME
 
 # Inject the files from the current tree in the right place in the LXD
 # container.
@@ -122,8 +124,8 @@ lxc exec lp-xenial-amd64 -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.gz 
 
 # Actually build.
 time /usr/share/launchpad-buildd/slavebin/in-target buildlivefs \
-  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067 \
-  --project ubuntu-cpc $MINIMIZED --datestamp 20170906.2 --image-format ext4
+  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME \
+  --project ubuntu-cpc $MINIMIZED --datestamp $SERIAL --image-format ext4
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
 rm -rf $OUTPUT_DIRECTORY
