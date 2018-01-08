@@ -1,3 +1,11 @@
+oldfashioned (0.2) xenial; urgency=medium
+
+  * Don't run as the "buildd" user
+  * Support --minimized builds
+  * Various cleanups and fixes
+
+ -- Christopher Glass (Canonical) <christopher.glass@canonical.com>  Mon, 08 Jan 2018 11:24:44 +0100
+
 oldfashioned (0.1-1) xenial; urgency=medium
 
   * Initial Release.

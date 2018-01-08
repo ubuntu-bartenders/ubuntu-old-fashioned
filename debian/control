@@ -8,5 +8,6 @@ Standards-Version: 4.1.2
 Package: oldfashioned
 Architecture: all
 Depends: ${misc:Depends}
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Description: Build Ubuntu cloud images the old fashioned way
+ The old-fashioned-image-build script will build ubuntu cloud images locally
+ from a livecd-rootfs checkout.
