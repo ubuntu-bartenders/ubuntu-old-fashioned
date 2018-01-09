@@ -1,4 +1,4 @@
-# Ubuntu old fashioned
+# Ubuntu Old Fashioned
 ![Ubuntu Old Fashioned](ubuntu-old-fashioned.png)
 
 Sometimes you don't want the modern comfort of a distributed build system.
