@@ -22,6 +22,18 @@ livecd-rootfs checkout.
 
 The images will be built and copied to your $HOME in a "build.output/" folder.
 
+## Example
+
+The most simple example to build all ubuntu-cpc images from scratch is:
+
+```bash
+bzr co lp:livecd-rootfs
+cd livecd-rootfs
+sudo old-fashioned-image-build
+```
+
+This should build everything in 30 minutes-ish.
+
 ## Speeding things up a bit
 
 To speed up package lookup you can install "squid-deb-proxy" on the host, then
@@ -34,21 +46,8 @@ Acquire::http::Proxy "http://$LXD_ADDRESS:8000";
 EOF
 ```
 
-## Running in the cloud
-This was tried on GCE, launching an instance with the following command:
+## Quotes
 
-```bash
-gcloud compute instances create --image-family=ubuntu-1604-lts --image-project=ubuntu-os-cloud "builder-$(date +%y%m%d-%H%M)" --machine-type n1-highcpu-2 --tags "test" --boot-disk-size 200GiB --zone us-central1-b
 ```
-
-## Example
-
-The most simple example to build all ubuntu-cpc images from scratch is:
-
-```bash
-bzr co lp:livecd-rootfs
-cd livecd-rootfs
-sudo old-fashioned-image-build
+slangasek> "what kind of glass do you serve an ubuntu old fashioned in? a chrisglass"
 ```
-
-This should build everything in 30 minutes-ish.
