@@ -136,25 +136,12 @@ time for FILE in `lxc exec lp-xenial-amd64 -- find /build -mindepth 1 \
     lxc file pull lp-xenial-amd64$FILE $OUTPUT_DIRECTORY/
 done
 
-# From here on it's cleanup
+# Cleanup the builder LXD.
+/usr/share/launchpad-buildd/slavebin/in-target scan-for-processes \
+  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME
 
-#sudo su - buildd -- <<"EOF"
-#set -xe
-#export PYTHONPATH=/usr/lib/launchpad-buildd
-#time /usr/share/launchpad-buildd/slavebin/in-target scan-for-processes \
-#  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067
-#EOF
+/usr/share/launchpad-buildd/slavebin/in-target umount-chroot \
+  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME
 
-#sudo su - buildd -- <<"EOF"
-#set -xe
-#export PYTHONPATH=/usr/lib/launchpad-buildd
-#time /usr/share/launchpad-buildd/slavebin/in-target umount-chroot \
-#  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067
-#EOF
-
-#sudo su - buildd -- <<"EOF"
-#set -xe
-#export PYTHONPATH=/usr/lib/launchpad-buildd
-#time /usr/share/launchpad-buildd/slavebin/in-target remove-build \
-#  --backend=lxd --series=xenial --arch=amd64 LIVEFSBUILD-109067
-#EOF
+/usr/share/launchpad-buildd/slavebin/in-target remove-build \
+  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME
