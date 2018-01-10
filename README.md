@@ -46,6 +46,9 @@ Acquire::http::Proxy "http://$LXD_ADDRESS:8000";
 EOF
 ```
 
+The script will currently inject the proxy automatically as long as the file
+respects that naming convention.
+
 ## Quotes
 
 ```
