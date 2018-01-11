@@ -24,10 +24,12 @@ while :; do
                 exit 1
             fi
             ;;
-        *)
-            echo "ERROR: Unknown option or argument: $1"
+        -?*)
+            echo "WARNING: Unknown option or argument ignored: $1"
             exit 1
             ;;
+        *)
+            break
     esac
 
     shift
@@ -75,6 +77,7 @@ mkdir -p $OLD_FASHIONED_BUILD_CACHE
 # we could reuse.
 if ! [ -f $CHROOT_ARCHIVE ] ; then
     echo "Downloading chroot filesystem from launchpad."
+    rm -rf $UAT_CHECKOUT
     bzr export $UAT_CHECKOUT lp:~ubuntu-archive/ubuntu-archive-tools/trunk
     $UAT_CHECKOUT/manage-chroot -a amd64 -s $SERIES info
     $UAT_CHECKOUT/manage-chroot -a amd64 -s $SERIES -f $CHROOT_ARCHIVE get
