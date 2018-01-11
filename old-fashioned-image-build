@@ -5,37 +5,32 @@
 
 # Original user-data script by rcj, weaponized by tribaal
 
-# TODO: Add parameter for other series. Right now it's xenial only.
 # TODO: Reuse buildd environment if found.
 
-getopt --test > /dev/null
-if [[ $? -ne 4 ]]; then
-    echo "Can't use getopt in this environment unfortunately."
-    exit 1
-fi
-
-OPTIONS=
-LONGOPTIONS=minimized
-PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
-if [[ $? -ne 0 ]]; then
-    exit 2
-fi
-
-eval set -- "$PARSED"
-
 MINIMIZED=""
+SERIES="xenial"
 
-while true; do
+while :; do
     case "$1" in
         --minimized)
             MINIMIZED="--subproject minimized"
-            shift
+            ;;
+        --series)
+            if [ "$2" ]; then
+                SERIES="$2"
+                shift
+            else
+                echo "ERROR: --series requires a non-empty argument."
+                exit 1
+            fi
             ;;
         *)
-            shift
-            break
+            echo "ERROR: Unknown option or argument: $1"
+            exit 1
             ;;
     esac
+
+    shift
 done
 
 DEPENDENCIES=(launchpad-buildd bzr python-ubuntutools)
@@ -66,21 +61,23 @@ fi
 
 set -xe
 
-OLD_FASHIONED_BUILD_CACHE=/tmp/old-fashioned-builder
-UAT_CHECKOUT=$OLD_FASHIONED_BUILD_CACHE/uat
-CHROOT_ARCHIVE_NAME=chroot-ubuntu-xenial-amd64.tar.bz
-CHROOT_ARCHIVE=$OLD_FASHIONED_BUILD_CACHE/$CHROOT_ARCHIVE_NAME
-OUTPUT_DIRECTORY=~/build.output
-LIVEFS_NAME=LOCAL_IMAGES_BUILD
-SERIAL=$(date +%Y%m%d.%H%M)
+OLD_FASHIONED_BUILD_CACHE="/tmp/old-fashioned-builder"
+UAT_CHECKOUT="$OLD_FASHIONED_BUILD_CACHE/uat"
+CHROOT_ARCHIVE_NAME="chroot-ubuntu-$SERIES-amd64.tar.bz"
+CHROOT_ARCHIVE="$OLD_FASHIONED_BUILD_CACHE/$CHROOT_ARCHIVE_NAME"
+OUTPUT_DIRECTORY="~/build.output"
+LIVEFS_NAME="LOCAL_IMAGES_BUILD"
+SERIAL="$(date +%Y%m%d.%H%M)"
+
+mkdir -p $OLD_FASHIONED_BUILD_CACHE
 
 # Get the chroot filesystem from Launchpad if there isn't already one locally
 # we could reuse.
 if ! [ -f $CHROOT_ARCHIVE ] ; then
     echo "Downloading chroot filesystem from launchpad."
     bzr export $UAT_CHECKOUT lp:~ubuntu-archive/ubuntu-archive-tools/trunk
-    $UAT_CHECKOUT/manage-chroot -a amd64 -s xenial info
-    $UAT_CHECKOUT/manage-chroot -a amd64 -s xenial -f $CHROOT_ARCHIVE get
+    $UAT_CHECKOUT/manage-chroot -a amd64 -s $SERIES info
+    $UAT_CHECKOUT/manage-chroot -a amd64 -s $SERIES -f $CHROOT_ARCHIVE get
 else
     echo "Reusing chroot tarball $CHROOT_ARCHIVE"
 fi
@@ -92,57 +89,57 @@ sudo sed -i 's/ntp\.buildd/0\.pool\.ntp\.org/g' \
 
 /usr/share/launchpad-buildd/slavebin/slave-prep
 /usr/share/launchpad-buildd/slavebin/in-target unpack-chroot --backend=lxd \
-  --series=xenial --arch=amd64 $LIVEFS_NAME $CHROOT_ARCHIVE
+  --series=$SERIES --arch=amd64 $LIVEFS_NAME $CHROOT_ARCHIVE
 /usr/share/launchpad-buildd/slavebin/in-target mount-chroot --backend=lxd \
-  --series=xenial --arch=amd64 $LIVEFS_NAME
+  --series=$SERIES --arch=amd64 $LIVEFS_NAME
 
 # Inject squid proxy config in the LXC if one exists in the host.
 SQUID_APT_CONFIG=/etc/apt/apt.conf.d/30squid-proxy
 if [ -f $SQUID_APT_CONFIG ] ; then
-	lxc file push $SQUID_APT_CONFIG lp-xenial-amd64$SQUID_APT_CONFIG
+	lxc file push $SQUID_APT_CONFIG lp-$SERIES-amd64$SQUID_APT_CONFIG
 fi
 
 # Use the same apt mirror as the host
 export MIRROR=$(grep archive /etc/apt/sources.list|head -1 | \
                cut -d' ' -f2 | cut -d'/' -f3)
 /usr/share/launchpad-buildd/slavebin/in-target override-sources-list \
-  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME \
-    "deb http://$MIRROR/ubuntu xenial main restricted universe multiverse" \
-    "deb http://$MIRROR/ubuntu xenial-security main restricted universe multiverse" \
-    "deb http://$MIRROR/ubuntu xenial-updates main restricted universe multiverse"
+  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME \
+    "deb http://$MIRROR/ubuntu $SERIES main restricted universe multiverse" \
+    "deb http://$MIRROR/ubuntu $SERIES-security main restricted universe multiverse" \
+    "deb http://$MIRROR/ubuntu $SERIES-updates main restricted universe multiverse"
 
 /usr/share/launchpad-buildd/slavebin/in-target update-debian-chroot \
-  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME
 
 # Inject the files from the current tree in the right place in the LXD
 # container.
-lxc exec lp-xenial-amd64 -- mkdir /usr/share/livecd-rootfs
+lxc exec lp-$SERIES-amd64 -- mkdir /usr/share/livecd-rootfs
 # Old LXCs don't have recursive push... so we tar and untar instead.
 tar czvf $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz .
-lxc file push $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz lp-xenial-amd64/usr/share/livecd-rootfs/
-lxc exec lp-xenial-amd64 -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.gz -C /usr/share/livecd-rootfs/
+lxc file push $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz lp-$SERIES-amd64/usr/share/livecd-rootfs/
+lxc exec lp-$SERIES-amd64 -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.gz -C /usr/share/livecd-rootfs/
 
 # Actually build.
 time /usr/share/launchpad-buildd/slavebin/in-target buildlivefs \
-  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME \
+  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME \
   --project ubuntu-cpc $MINIMIZED --datestamp $SERIAL --image-format ext4
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
 rm -rf $OUTPUT_DIRECTORY
 mkdir $OUTPUT_DIRECTORY
-lxc file pull lp-xenial-amd64/build/binary.log $OUTPUT_DIRECTORY/;
-time for FILE in `lxc exec lp-xenial-amd64 -- find /build -mindepth 1 \
+lxc file pull lp-$SERIES-amd64/build/binary.log $OUTPUT_DIRECTORY/;
+time for FILE in `lxc exec lp-$SERIES-amd64 -- find /build -mindepth 1 \
                   \! -type d \! -type l -name 'livecd.*' -print`; do
     echo $FILE
-    lxc file pull lp-xenial-amd64$FILE $OUTPUT_DIRECTORY/
+    lxc file pull lp-$SERIES-amd64$FILE $OUTPUT_DIRECTORY/
 done
 
 # Cleanup the builder LXD.
 /usr/share/launchpad-buildd/slavebin/in-target scan-for-processes \
-  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME
 
 /usr/share/launchpad-buildd/slavebin/in-target umount-chroot \
-  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME
 
 /usr/share/launchpad-buildd/slavebin/in-target remove-build \
-  --backend=lxd --series=xenial --arch=amd64 $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME
