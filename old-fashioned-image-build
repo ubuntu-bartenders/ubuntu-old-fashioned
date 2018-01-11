@@ -66,9 +66,10 @@ fi
 
 set -xe
 
-UAT_CHECKOUT=/tmp/uat
+OLD_FASHIONED_BUILD_CACHE=/tmp/old-fashioned-builder
+UAT_CHECKOUT=$OLD_FASHIONED_BUILD_CACHE/uat
 CHROOT_ARCHIVE_NAME=chroot-ubuntu-xenial-amd64.tar.bz
-CHROOT_ARCHIVE=/tmp/$CHROOT_ARCHIVE_NAME
+CHROOT_ARCHIVE=$OLD_FASHIONED_BUILD_CACHE/$CHROOT_ARCHIVE_NAME
 OUTPUT_DIRECTORY=~/build.output
 LIVEFS_NAME=LOCAL_IMAGES_BUILD
 SERIAL=$(date +%Y%m%d.%H%M)
@@ -117,8 +118,8 @@ export MIRROR=$(grep archive /etc/apt/sources.list|head -1 | \
 # container.
 lxc exec lp-xenial-amd64 -- mkdir /usr/share/livecd-rootfs
 # Old LXCs don't have recursive push... so we tar and untar instead.
-tar czvf /tmp/live-build.tar.gz .
-lxc file push /tmp/live-build.tar.gz lp-xenial-amd64/usr/share/livecd-rootfs/
+tar czvf $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz .
+lxc file push $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz lp-xenial-amd64/usr/share/livecd-rootfs/
 lxc exec lp-xenial-amd64 -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.gz -C /usr/share/livecd-rootfs/
 
 # Actually build.
