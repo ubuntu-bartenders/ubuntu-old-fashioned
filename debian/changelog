@@ -1,4 +1,4 @@
-oldfashioned (1.0) UNRELEASED; urgency=medium
+oldfashioned (1.0) xenial; urgency=medium
 
   * Added build cleanup steps
   * Support --http-proxy

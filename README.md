@@ -14,13 +14,12 @@ Well look no more!
 This script is meant to let you build ubuntu cloud images locally from a
 livecd-rootfs checkout.
 
-## Usage
+## Installation
 
-- Add this script to your path, e.g. /usr/local/bin
-- as root (sorry), cd to your livecd-rootfs checkout
-- Invoke "old-fashioned-image-build"
+On Ubuntu (Xenial):
 
-The images will be built and copied to your $HOME in a "build.output/" folder.
+- sudo add-apt-repository -u ppa:tribaal/oldfashioned
+- sudo apt install oldfashioned
 
 ## Example
 
@@ -32,7 +31,8 @@ cd livecd-rootfs
 sudo old-fashioned-image-build
 ```
 
-This should build everything in 30 minutes-ish.
+The images will be copied to your $HOME in a "build.output/" folder after about
+30 minutes.
 
 ## Speeding things up a bit
 
