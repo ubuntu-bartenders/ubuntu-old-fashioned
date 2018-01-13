@@ -1,3 +1,9 @@
+oldfashioned (1.1) xenial; urgency=medium
+
+  * Build dep fix.
+
+ -- Christopher Glass (Canonical) <christopher.glass@canonical.com>  Sat, 13 Jan 2018 23:51:21 +0100
+
 oldfashioned (1.0) xenial; urgency=medium
 
   * Added build cleanup steps
