@@ -46,8 +46,8 @@ Acquire::http::Proxy "http://$LXD_ADDRESS:8000";
 EOF
 ```
 
-The script will currently inject the proxy automatically as long as the file
-respects that naming convention.
+The script will autodetect proxy settings as long as they are set in a file in
+/etc/apt/apt.conf.d/ .
 
 ## Quotes
 

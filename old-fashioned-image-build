@@ -97,9 +97,15 @@ sudo sed -i 's/ntp\.buildd/0\.pool\.ntp\.org/g' \
   --series=$SERIES --arch=amd64 $LIVEFS_NAME
 
 # Inject squid proxy config in the LXC if one exists in the host.
-SQUID_APT_CONFIG=/etc/apt/apt.conf.d/30squid-proxy
-if [ -f $SQUID_APT_CONFIG ] ; then
-	lxc file push $SQUID_APT_CONFIG lp-$SERIES-amd64$SQUID_APT_CONFIG
+SQUID_ADDRESS=$(cat /etc/apt/apt.conf.d/* | sed -n 's/Acquire::http::Proxy "\(.*\)";/\1/p')
+SQUID_TMP_CONFIG=/tmp/30squid-proxy
+HTTP_PROXY=""
+if [ x"$SQUID_ADDRESS" != 'x' ] ; then
+    HTTP_PROXY="--http-proxy=$SQUID_ADDRESS"
+    cat > /tmp/30squid-proxy << EOF
+Acquire::http::Proxy "$SQUID_ADDRESS";
+EOF
+	lxc file push $SQUID_TMP_CONFIG lp-$SERIES-amd64/etc/apt/apt.conf.d/30squid-proxy
 fi
 
 # Use the same apt mirror as the host
@@ -124,7 +130,7 @@ lxc exec lp-$SERIES-amd64 -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.gz
 
 # Actually build.
 time /usr/share/launchpad-buildd/slavebin/in-target buildlivefs \
-  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME \
+  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME $HTTP_PROXY \
   --project ubuntu-cpc $MINIMIZED --datestamp $SERIAL --image-format ext4
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
