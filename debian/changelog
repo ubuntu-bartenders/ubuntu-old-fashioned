@@ -1,3 +1,9 @@
+oldfashioned (1.2) xenial; urgency=medium
+
+  * Fixed output dir copying
+
+ -- Christopher Glass (Canonical) <christopher.glass@canonical.com>  Sun, 14 Jan 2018 00:27:53 +0100
+
 oldfashioned (1.1) xenial; urgency=medium
 
   * Build dep fix.
