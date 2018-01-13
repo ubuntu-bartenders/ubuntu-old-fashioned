@@ -1,9 +1,10 @@
 Source: oldfashioned
 Section: misc
 Priority: optional
-Maintainer: Christopher Glass (Canonical) <christopher.glass@canonical.com>
+Maintainer: Christopher Glass (Ubuntu) <tribaal@ubuntu.com>
 Build-Depends: debhelper (>= 10)
 Standards-Version: 4.1.2
+Vcs-Git: https://github.com/chrisglass/ubuntu-old-fashioned.git
 
 Package: oldfashioned
 Architecture: all

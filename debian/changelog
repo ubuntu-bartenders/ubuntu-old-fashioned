@@ -1,3 +1,11 @@
+oldfashioned (1.0) UNRELEASED; urgency=medium
+
+  * Added build cleanup steps
+  * Support --http-proxy
+  * Refactoring/cleanup
+
+ -- Christopher Glass (Canonical) <christopher.glass@canonical.com>  Sat, 13 Jan 2018 23:32:49 +0100
+
 oldfashioned (0.2) xenial; urgency=medium
 
   * Don't run as the "buildd" user
