@@ -120,6 +120,10 @@ export MIRROR=$(grep archive /etc/apt/sources.list|head -1 | \
 /usr/share/launchpad-buildd/slavebin/in-target update-debian-chroot \
   --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME
 
+# Change the hostname to keep livecd-rootfs from mistaking this
+# as a buildd and setting the mirror url to ftpinternal
+lxc exec lp-$SERIES-amd64 -- hostname standalone-lp-$SERIES-amd64
+
 # Inject the files from the current tree in the right place in the LXD
 # container.
 lxc exec lp-$SERIES-amd64 -- mkdir /usr/share/livecd-rootfs
