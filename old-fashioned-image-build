@@ -46,10 +46,10 @@ for dep in ${DEPENDENCIES[@]} ; do
     fi
 done
 
-if [ $(lsb_release -s -c) == "bionic" ] ; then
-    echo "This currently doesn't work on bionic."
-    exit 1
-fi
+#if [ $(lsb_release -s -c) == "bionic" ] ; then
+#    echo "This currently doesn't work on bionic."
+#    exit 1
+#fi
 
 if ! [ -f get-ppa-fingerprint ] || ! [ -d live-build ] ; then
     echo 'Cannot find the expected livecd-rootfs tree structure in $PWD.'
@@ -119,6 +119,10 @@ export MIRROR=$(grep archive /etc/apt/sources.list|head -1 | \
 
 /usr/share/launchpad-buildd/slavebin/in-target update-debian-chroot \
   --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME
+
+# Change the hostname to keep livecd-rootfs from mistaking this
+# as a buildd and setting the mirror url to ftpinternal
+lxc exec lp-$SERIES-amd64 -- hostname standalone-lp-$SERIES-amd64
 
 # Inject the files from the current tree in the right place in the LXD
 # container.
