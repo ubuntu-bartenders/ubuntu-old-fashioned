@@ -8,7 +8,7 @@
 # TODO: Reuse buildd environment if found.
 
 MINIMIZED=""
-SERIES="xenial"
+SERIES=""
 
 while :; do
     case "$1" in
@@ -34,6 +34,11 @@ while :; do
 
     shift
 done
+
+if [ x$SERIES = "x" ] ; then
+    echo "Missing required '--series' argument e.g. '--series xenial'"
+    exit 1
+fi
 
 DEPENDENCIES=(launchpad-buildd bzr python-ubuntutools)
 
