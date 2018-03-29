@@ -16,10 +16,13 @@ livecd-rootfs checkout.
 
 ## Installation
 
-On Ubuntu (Xenial):
+On Ubuntu (**only works for Xenial**):
 
 - sudo add-apt-repository -u ppa:tribaal/oldfashioned
 - sudo apt install oldfashioned
+
+Note: Since this script relies on launchpad buildd to be available, it will
+unfortunately not work until that package is made available for other series.
 
 ## Example
 
@@ -48,6 +51,17 @@ EOF
 
 The script will autodetect proxy settings as long as they are set in a file in
 /etc/apt/apt.conf.d/ .
+
+## Extra hooks
+
+If you would like to build with extra hooks, you need to nest them under the
+ubuntu-cpc part of th livecd-rootfs tree:
+
+- bzr co lp:livecd-rootfs
+- cd livecd-rootfs/xenial/live-build/ubuntu-cpc/hooks
+- bzr co lp:my-extra-hooks extra
+
+Please make sure your hook files are **executable**.
 
 ## Quotes
 
