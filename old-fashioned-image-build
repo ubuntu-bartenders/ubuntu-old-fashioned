@@ -9,6 +9,7 @@
 
 MINIMIZED=""
 SERIES=""
+USE_CHROOT_CACHE=false
 
 while :; do
     case "$1" in
@@ -23,6 +24,9 @@ while :; do
                 echo "ERROR: --series requires a non-empty argument."
                 exit 1
             fi
+            ;;
+        --use-chroot-cache)
+            USE_CHROOT_CACHE=true
             ;;
         -?*)
             echo "WARNING: Unknown option or argument ignored: $1"
@@ -75,7 +79,7 @@ mkdir -p $OLD_FASHIONED_BUILD_CACHE
 
 # Get the chroot filesystem from Launchpad if there isn't already one locally
 # we could reuse.
-if ! [ -f $CHROOT_ARCHIVE ] ; then
+if ! [ -f $CHROOT_ARCHIVE ] || [ $USE_CHROOT_CACHE = false ] ; then
     echo "Downloading chroot filesystem from launchpad."
     rm -rf $UAT_CHECKOUT
     bzr export $UAT_CHECKOUT lp:~ubuntu-archive/ubuntu-archive-tools/trunk
