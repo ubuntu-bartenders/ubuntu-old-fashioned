@@ -137,7 +137,14 @@ lxc exec lp-$SERIES-amd64 -- hostname standalone-lp-$SERIES-amd64
 
 # Inject the files from the current tree in the right place in the LXD
 # container.
-lxc exec lp-$SERIES-amd64 -- mkdir /usr/share/livecd-rootfs
+# First install livecd-rootfs. We will replace the bulk of the livecd-rootfs
+# code with our local copy
+lxc exec lp-$SERIES-amd64 -- apt-get install -y livecd-rootfs
+
+# Remove and recreate the livecd-rootfs code we will be replacing with code
+# in our current directory
+lxc exec lp-$SERIES-amd64 -- rm -rf /usr/share/livecd-rootfs
+lxc exec lp-$SERIES-amd64 -- mkdir -p /usr/share/livecd-rootfs
 # Old LXCs don't have recursive push... so we tar and untar instead.
 tar czvf $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz .
 lxc file push $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz lp-$SERIES-amd64/usr/share/livecd-rootfs/
