@@ -131,7 +131,8 @@ lxc exec lp-$SERIES-amd64 -- hostname standalone-lp-$SERIES-amd64
 # Inject the files from the current tree in the right place in the LXD
 # container.
 # First install livecd-rootfs. We will replace the bulk of the livecd-rootfs
-# code with our local copy
+# code with our local copy. Without this livecd-rootfs is installed by
+# buildlivefs (below) overwriting changes
 lxc exec lp-$SERIES-amd64 -- apt-get install -y livecd-rootfs
 
 # Remove and recreate the livecd-rootfs code we will be replacing with code
