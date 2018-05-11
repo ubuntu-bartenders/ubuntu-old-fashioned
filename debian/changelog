@@ -1,3 +1,11 @@
+oldfashioned (1.4) xenial; urgency=medium
+
+  * Add --project CLI flag instead of hardcoding ubuntu-cpc.
+  * Add --use-chroot-cache argument to CLI defaulting to false.
+  * Various fixes.
+
+ -- Christopher Glass (Ubuntu) <tribaal@ubuntu.com>  Fri, 11 May 2018 08:10:12 +0200
+
 oldfashioned (1.3) xenial; urgency=medium
 
   * Make the --series argument required.
