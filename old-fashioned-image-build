@@ -126,13 +126,16 @@ EOF
 fi
 
 # Use the same apt mirror as the host
-export MIRROR=$(grep archive /etc/apt/sources.list|head -1 | \
+export MIRROR=$(egrep "(archive|ports)" /etc/apt/sources.list|head -1 | \
                cut -d' ' -f2 | cut -d'/' -f3)
+export MIRROR_PATH=$(egrep "(archive|ports)" /etc/apt/sources.list|head -1 | \
+               cut -d' ' -f2 | cut -d'/' -f4)
+
 /usr/share/launchpad-buildd/slavebin/in-target override-sources-list \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME \
-    "deb http://$MIRROR/ubuntu $SERIES main restricted universe multiverse" \
-    "deb http://$MIRROR/ubuntu $SERIES-security main restricted universe multiverse" \
-    "deb http://$MIRROR/ubuntu $SERIES-updates main restricted universe multiverse"
+    "deb http://$MIRROR/${MIRROR_PATH} $SERIES main restricted universe multiverse" \
+    "deb http://$MIRROR/${MIRROR_PATH} $SERIES-security main restricted universe multiverse" \
+    "deb http://$MIRROR/${MIRROR_PATH} $SERIES-updates main restricted universe multiverse"
 
 /usr/share/launchpad-buildd/slavebin/in-target update-debian-chroot \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
