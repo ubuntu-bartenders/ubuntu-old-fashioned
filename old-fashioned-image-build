@@ -51,6 +51,12 @@ while :; do
     shift
 done
 
+case `arch` in
+    aarch64) ARCH=arm64;;
+    x86_64) ARCH=amd64;;
+    *) echo "Unrecognized arch"; exit 1;;
+esac
+
 if [ x$SERIES = "x" ] ; then
     echo "Missing required '--series' argument e.g. '--series xenial'"
     exit 1
@@ -81,7 +87,7 @@ set -xe
 
 OLD_FASHIONED_BUILD_CACHE="/tmp/old-fashioned-builder"
 UAT_CHECKOUT="$OLD_FASHIONED_BUILD_CACHE/uat"
-CHROOT_ARCHIVE_NAME="chroot-ubuntu-$SERIES-amd64.tar.bz"
+CHROOT_ARCHIVE_NAME="chroot-ubuntu-$SERIES-${ARCH}.tar.bz"
 CHROOT_ARCHIVE="$OLD_FASHIONED_BUILD_CACHE/$CHROOT_ARCHIVE_NAME"
 OUTPUT_DIRECTORY=~/build.output
 LIVEFS_NAME="LOCAL_IMAGES_BUILD"
@@ -95,8 +101,8 @@ if ! [ -f $CHROOT_ARCHIVE ] || [ $USE_CHROOT_CACHE = false ] ; then
     echo "Downloading chroot filesystem from launchpad."
     rm -rf $UAT_CHECKOUT
     bzr export $UAT_CHECKOUT lp:~ubuntu-archive/ubuntu-archive-tools/trunk
-    $UAT_CHECKOUT/manage-chroot -a amd64 -s $SERIES info
-    $UAT_CHECKOUT/manage-chroot -a amd64 -s $SERIES -f $CHROOT_ARCHIVE get
+    $UAT_CHECKOUT/manage-chroot -a ${ARCH} -s $SERIES info
+    $UAT_CHECKOUT/manage-chroot -a ${ARCH} -s $SERIES -f $CHROOT_ARCHIVE get
 else
     echo "Reusing chroot tarball $CHROOT_ARCHIVE"
 fi
@@ -108,9 +114,9 @@ sudo sed -i 's/ntp\.buildd/0\.pool\.ntp\.org/g' \
 
 /usr/share/launchpad-buildd/slavebin/slave-prep
 /usr/share/launchpad-buildd/slavebin/in-target unpack-chroot --backend=lxd \
-  --series=$SERIES --arch=amd64 $LIVEFS_NAME $CHROOT_ARCHIVE
+  --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $CHROOT_ARCHIVE
 /usr/share/launchpad-buildd/slavebin/in-target mount-chroot --backend=lxd \
-  --series=$SERIES --arch=amd64 $LIVEFS_NAME
+  --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
 
 # Inject squid proxy config in the LXC if one exists in the host.
 SQUID_ADDRESS=$(cat /etc/apt/apt.conf.d/* | sed -n 's/Acquire::http::Proxy "\(.*\)";/\1/p')
@@ -121,59 +127,62 @@ if [ x"$SQUID_ADDRESS" != 'x' ] ; then
     cat > /tmp/30squid-proxy << EOF
 Acquire::http::Proxy "$SQUID_ADDRESS";
 EOF
-	lxc file push $SQUID_TMP_CONFIG lp-$SERIES-amd64/etc/apt/apt.conf.d/30squid-proxy
+	lxc file push $SQUID_TMP_CONFIG lp-$SERIES-${ARCH}/etc/apt/apt.conf.d/30squid-proxy
 fi
 
 # Use the same apt mirror as the host
-export MIRROR=$(grep archive /etc/apt/sources.list|head -1 | \
+export MIRROR=$(egrep "(archive|ports)" /etc/apt/sources.list|head -1 | \
                cut -d' ' -f2 | cut -d'/' -f3)
+export MIRROR_PATH=$(egrep "(archive|ports)" /etc/apt/sources.list|head -1 | \
+               cut -d' ' -f2 | cut -d'/' -f4)
+
 /usr/share/launchpad-buildd/slavebin/in-target override-sources-list \
-  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME \
-    "deb http://$MIRROR/ubuntu $SERIES main restricted universe multiverse" \
-    "deb http://$MIRROR/ubuntu $SERIES-security main restricted universe multiverse" \
-    "deb http://$MIRROR/ubuntu $SERIES-updates main restricted universe multiverse"
+  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME \
+    "deb http://$MIRROR/${MIRROR_PATH} $SERIES main restricted universe multiverse" \
+    "deb http://$MIRROR/${MIRROR_PATH} $SERIES-security main restricted universe multiverse" \
+    "deb http://$MIRROR/${MIRROR_PATH} $SERIES-updates main restricted universe multiverse"
 
 /usr/share/launchpad-buildd/slavebin/in-target update-debian-chroot \
-  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
 
 # Inject the files from the current tree in the right place in the LXD
 # container.
 # First install livecd-rootfs. We will replace the bulk of the livecd-rootfs
 # code with our local copy. Without this livecd-rootfs is installed by
 # buildlivefs (below) overwriting changes
-lxc exec lp-$SERIES-amd64 -- apt-get install -y livecd-rootfs
+lxc exec lp-$SERIES-${ARCH} -- apt-get install -y livecd-rootfs
 
 # Remove and recreate the livecd-rootfs code we will be replacing with code
 # in our current directory
-lxc exec lp-$SERIES-amd64 -- rm -rf /usr/share/livecd-rootfs
-lxc exec lp-$SERIES-amd64 -- mkdir -p /usr/share/livecd-rootfs
+lxc exec lp-$SERIES-${ARCH} -- rm -rf /usr/share/livecd-rootfs
+lxc exec lp-$SERIES-${ARCH} -- mkdir -p /usr/share/livecd-rootfs
 # Old LXCs don't have recursive push... so we tar and untar instead.
 tar czvf $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz .
-lxc file push $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz lp-$SERIES-amd64/usr/share/livecd-rootfs/
-lxc exec lp-$SERIES-amd64 -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.gz -C /usr/share/livecd-rootfs/
+lxc file push $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz lp-$SERIES-${ARCH}/usr/share/livecd-rootfs/
+lxc exec lp-$SERIES-${ARCH} -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.gz -C /usr/share/livecd-rootfs/
 
 # Actually build.
 time /usr/share/launchpad-buildd/slavebin/in-target buildlivefs \
-  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME $HTTP_PROXY \
+  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
   --project $PROJECT $MINIMIZED --datestamp $SERIAL --image-format ext4 \
   $IMAGE_TARGET
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
 rm -rf $OUTPUT_DIRECTORY
 mkdir $OUTPUT_DIRECTORY
-lxc file pull lp-$SERIES-amd64/build/binary.log $OUTPUT_DIRECTORY/;
-time for FILE in `lxc exec lp-$SERIES-amd64 -- find /build -mindepth 1 \
+lxc file pull lp-$SERIES-${ARCH}/build/binary.log $OUTPUT_DIRECTORY/;
+time for FILE in `lxc exec lp-$SERIES-${ARCH} -- find /build -mindepth 1 \
                   \! -type d \! -type l -name 'livecd.*' -print`; do
     echo $FILE
-    lxc file pull lp-$SERIES-amd64$FILE $OUTPUT_DIRECTORY/
+    lxc file pull lp-$SERIES-${ARCH}$FILE $OUTPUT_DIRECTORY/
 done
 
 # Cleanup the builder LXD.
 /usr/share/launchpad-buildd/slavebin/in-target scan-for-processes \
-  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
 
 /usr/share/launchpad-buildd/slavebin/in-target umount-chroot \
-  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
 
 /usr/share/launchpad-buildd/slavebin/in-target remove-build \
-  --backend=lxd --series=$SERIES --arch=amd64 $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
