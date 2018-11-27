@@ -11,6 +11,7 @@ MINIMIZED=""
 PROJECT="ubuntu-cpc"
 SERIES=""
 USE_CHROOT_CACHE=false
+IMAGE_TARGET=""
 
 while :; do
     case "$1" in
@@ -34,6 +35,10 @@ while :; do
             ;;
         --use-chroot-cache)
             USE_CHROOT_CACHE=true
+            ;;
+        --image-target)
+            IMAGE_TARGET="$IMAGE_TARGET --image-target $2"
+            shift
             ;;
         -?*)
             echo "WARNING: Unknown option or argument ignored: $1"
@@ -159,7 +164,8 @@ lxc exec lp-$SERIES-${ARCH} -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.
 # Actually build.
 time /usr/share/launchpad-buildd/slavebin/in-target buildlivefs \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
-  --project $PROJECT $MINIMIZED --datestamp $SERIAL --image-format ext4
+  --project $PROJECT $MINIMIZED --datestamp $SERIAL --image-format ext4 \
+  $IMAGE_TARGET
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
 rm -rf $OUTPUT_DIRECTORY
