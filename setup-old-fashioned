@@ -12,6 +12,7 @@ appropriate hooks directory.
 
 from subprocess import call
 
+import platform
 from typing import Dict, List, Text, Tuple  # noqa
 
 PKG_INSTALL_CMDS = [
@@ -86,6 +87,10 @@ def input_repo():
 
 
 if __name__ == '__main__':
+    if '16.04' not in platform.linux_distribution():
+        print("Old-fashioned must be run on Xenial Ubuntu.")
+        exit(1)
+
     def print_tuple_opts(d):
         # type: (Dict[Text, Tuple[Text, Text]]) -> None
         ordered = sorted(list(d.keys()), key=lambda x: int(x))
