@@ -6,19 +6,21 @@ description: |
   livecd-rootfs checkout.
 
 grade: stable
-confinement: devmode
+confinement: classic
 architectures: [ all ]
 
 apps:
   oldfashioned:
-    command: sudo -E old-fashioned-image-build
+    command: old-fashioned-image-build
 
 parts:
   oldfashioned:
     plugin: nil
     source: .
     source-type: git
-    install: |
+    override-build: |
+      snapcraftctl build
+      cp ../../../old-fashioned-image-build ../../../prime
       sudo add-apt-repository -y ppa:launchpad/ppa
       sudo apt-get update
       sudo apt-get install -y launchpad-buildd bzr python-ubuntutools
