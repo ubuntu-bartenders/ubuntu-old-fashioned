@@ -121,8 +121,9 @@ if __name__ == '__main__':
     else:
         cmd = input_repo()
 
+    repo_dir = "/livecd-rootfs"
     parent_dir = os.path.abspath(os.path.join("./", os.pardir))
-    cmd += [parent_dir]
+    cmd += [parent_dir + repo_dir]
     print("Executing {}".format(' '.join(cmd)))
     call(cmd)
 
