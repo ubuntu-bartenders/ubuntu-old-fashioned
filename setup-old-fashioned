@@ -9,6 +9,7 @@ Note that any "extra" build hooks must still be manually copied into the
 appropriate hooks directory.
 
 """
+import os
 
 from subprocess import call
 
@@ -120,6 +121,8 @@ if __name__ == '__main__':
     else:
         cmd = input_repo()
 
+    parent_dir = os.path.abspath(os.path.join("./", os.pardir))
+    cmd += [parent_dir]
     print("Executing {}".format(' '.join(cmd)))
     call(cmd)
 
