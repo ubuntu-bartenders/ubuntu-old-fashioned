@@ -1,0 +1,134 @@
+#!/usr/bin/python3
+"""
+
+This is a setup script for the Ubuntu Old-Fashioned image builder. Its
+purpose is to make the process of setting up a new build environment
+(e.g. a VPS) more hands-free.
+
+Note that any "extra" build hooks must still be manually copied into the
+appropriate hooks directory.
+
+"""
+import os
+
+from subprocess import call
+
+import platform
+from typing import Dict, List, Text, Tuple  # noqa
+
+PKG_INSTALL_CMDS = [
+    ["sudo", "add-apt-repository", "-y", "ppa:cloud-images/old-fashioned"],
+    ["sudo", "add-apt-repository", "-y", "ppa:launchpad/ppa"],
+    ["sudo", "apt-get", "update"],
+    ["sudo", "apt-get", "install", "-y", "oldfashioned"],
+    ["sudo", "apt-get", "install", "-y", "launchpad-buildd", "bzr",
+     "python-ubuntutools",
+     ],
+]
+
+LIVECD_ROOTFS_OPTIONS = {
+    '1': ("trunk", "lp:livecd-rootfs"),
+    '2': ("cosmic", "lp:~ubuntu-core-dev/livecd-rootfs/cosmic-proposed"),
+    '3': ("bionic", "lp:~ubuntu-core-dev/livecd-rootfs/bionic-proposed"),
+    '4': ("xenial", "lp:~ubuntu-core-dev/livecd-rootfs/xenial-proposed"),
+    '5': ("trusty", "lp:~ubuntu-core-dev/livecd-rootfs/trusty-proposed"),
+    '6': ("precise", "lp:~ubuntu-core-dev/livecd-rootfs/precise-proposed"),
+    '7': ("package", "livecd-rootfs"),
+    '8': ("custom", "You input"),
+}
+
+
+def input_repo():
+    # type: () -> List[Text]
+    vcs = {
+            '1': "git",
+            '2': "bzr",
+            }
+
+    def print_opts(ks):
+        # type: (List[Text]) -> None
+        for key in ks:
+            print("{}: {}".format(key, vcs[key]))
+
+    print("Which VCS?")
+    ks = sorted(list(vcs.keys()), key=lambda x: int(x))
+    print_opts(ks)
+
+    choice = ""
+    while choice not in ks:
+        choice = input("> ")
+        if choice not in ks:
+            print("Please choose from the options listed.")
+            print_opts(ks)
+
+    cmd = [vcs[choice]]
+    if choice == '1':
+        cmd += ["clone"]
+    else:
+        cmd += ["branch"]
+
+    print("Please enter the repo you would like to clone:")
+    repo = input("> ")
+
+    correct = False
+    done = "n"
+    while not correct:
+        print(repo)
+        print("Is the above correct? [y/n]")
+        done = input("> ")
+        if done.lower()[0] == 'y':
+            break
+        else:
+            print("Please enter the repo you would like to clone:")
+            repo = input("> ")
+
+    cmd += repo.split(' ')
+
+    return cmd
+
+
+if __name__ == '__main__':
+    if '16.04' not in platform.linux_distribution():
+        print("Old-fashioned must be run on Xenial Ubuntu.")
+        exit(1)
+
+    def print_tuple_opts(d):
+        # type: (Dict[Text, Tuple[Text, Text]]) -> None
+        ordered = sorted(list(d.keys()), key=lambda x: int(x))
+        for key in ordered:
+            tup = d[key]
+            print("{}: {} -- {}".format(key, tup[0], tup[1]))
+
+    for cmd in PKG_INSTALL_CMDS:
+        call(cmd)
+
+    print()
+    print("Choose livecd-rootfs option")
+    print_tuple_opts(LIVECD_ROOTFS_OPTIONS)
+
+    ks = LIVECD_ROOTFS_OPTIONS.keys()
+    choice = ""
+    while choice not in ks:
+        choice = input("> ")
+        if choice not in ks:
+            print("Please choose from the options listed.")
+            print_tuple_opts(LIVECD_ROOTFS_OPTIONS)
+
+    if int(choice) < 7:
+        cmd = ["bzr", "branch"] + [LIVECD_ROOTFS_OPTIONS[choice][1]]
+    elif choice == '7':
+        cmd = ["sudo", "apt-get", "install", "-y", "livecd-rootfs"]
+    else:
+        cmd = input_repo()
+
+    repo_dir = "/livecd-rootfs"
+    parent_dir = os.path.abspath(os.path.join("./", os.pardir))
+    cmd += [parent_dir + repo_dir]
+    print("Executing {}".format(' '.join(cmd)))
+    call(cmd)
+
+    print("Done installing tools. All that's left to do is clone and copy any "
+          "additional hooks you might want to run.")
+    print("Run old-fashioned via:")
+    print("    cd <livecd-rootfs repo>")
+    print("    sudo -E old-fashioned-image-build --series <series>")
