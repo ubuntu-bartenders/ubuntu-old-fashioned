@@ -11,6 +11,7 @@ MINIMIZED=""
 PROJECT="ubuntu-cpc"
 SERIES=""
 USE_CHROOT_CACHE=false
+CLEANUP=true
 IMAGE_TARGET=""
 
 while :; do
@@ -35,6 +36,9 @@ while :; do
             ;;
         --use-chroot-cache)
             USE_CHROOT_CACHE=true
+            ;;
+        --no-cleanup)
+            CLEANUP=false
             ;;
         --image-target)
             IMAGE_TARGET="$IMAGE_TARGET --image-target $2"
@@ -176,6 +180,11 @@ time for FILE in `lxc exec lp-$SERIES-${ARCH} -- find /build -mindepth 1 \
     echo $FILE
     lxc file pull lp-$SERIES-${ARCH}$FILE $OUTPUT_DIRECTORY/
 done
+
+if [ $CLEANUP = false ] ; then
+    echo "Exiting without cleanup, --no-cleanup specified"
+    exit 0
+fi
 
 # Cleanup the builder LXD.
 /usr/share/launchpad-buildd/slavebin/in-target scan-for-processes \
