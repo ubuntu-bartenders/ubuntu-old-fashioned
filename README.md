@@ -18,10 +18,11 @@ livecd-rootfs checkout.
 
 On Ubuntu (**only works for Xenial**):
 
-- sudo add-apt-repository -u ppa:tribaal/oldfashioned
-- sudo apt install oldfashioned
+The easiest way to install is to use the included setup script:
 
-Note: Since this script relies on launchpad buildd to be available, it will
+`./setup-old-fashioned`
+
+Note: Since old-fashioned relies on launchpad buildd to be available, it will
 unfortunately not work until that package is made available for other series.
 
 ## Example
@@ -29,7 +30,7 @@ unfortunately not work until that package is made available for other series.
 The most simple example to build all ubuntu-cpc images from scratch is:
 
 ```bash
-bzr co lp:livecd-rootfs
+git clone lp:livecd-rootfs
 cd livecd-rootfs
 sudo old-fashioned-image-build
 ```
@@ -55,11 +56,13 @@ The script will autodetect proxy settings as long as they are set in a file in
 ## Extra hooks
 
 If you would like to build with extra hooks, you need to nest them under the
-ubuntu-cpc part of th livecd-rootfs tree:
+ubuntu-cpc part of the livecd-rootfs tree:
 
-- bzr co lp:livecd-rootfs
-- cd livecd-rootfs/xenial/live-build/ubuntu-cpc/hooks
-- bzr co lp:my-extra-hooks extra
+```bash
+git clone lp:livecd-rootfs
+git clone lp:my-extra-hooks
+cp -a my-extra-hooks/extra livecd-rootfs/live-build/ubuntu-cpc/hooks
+```
 
 Please make sure your hook files are **executable**.
 
