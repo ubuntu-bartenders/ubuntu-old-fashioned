@@ -7,8 +7,9 @@
 
 # TODO: Reuse buildd environment if found.
 
-MINIMIZED=""
+IMG_FORMAT="ext4"
 PROJECT="ubuntu-cpc"
+SUBPROJECT=""
 SERIES=""
 USE_CHROOT_CACHE=false
 CLEANUP=true
@@ -17,7 +18,15 @@ IMAGE_TARGET=""
 while :; do
     case "$1" in
         --minimized)
-            MINIMIZED="--subproject minimized"
+            SUBPROJECT="--subproject minimized"
+            ;;
+        --subproject)
+            SUBPROJECT="--subproject $2"
+            shift
+            ;;
+        --img_format)
+            IMG_FORMAT="$2"
+            shift
             ;;
         --project)
             if [ "$2" ]; then
@@ -168,7 +177,7 @@ lxc exec lp-$SERIES-${ARCH} -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.
 # Actually build.
 time /usr/share/launchpad-buildd/bin/in-target buildlivefs \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
-  --project $PROJECT $MINIMIZED --datestamp $SERIAL --image-format ext4 \
+  --project $PROJECT $SUBPROJECT --datestamp $SERIAL --image-format $IMG_FORMAT \
   $IMAGE_TARGET
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
