@@ -14,6 +14,7 @@ SERIES=""
 USE_CHROOT_CACHE=false
 CLEANUP=true
 IMAGE_TARGET=""
+REPO_SNAPSHOT=""
 
 while :; do
     case "$1" in
@@ -51,6 +52,10 @@ while :; do
             ;;
         --image-target)
             IMAGE_TARGET="$IMAGE_TARGET --image-target $2"
+            shift
+            ;;
+        --repo-snapshot-stamp)
+            REPO_SNAPSHOT="--repo-snapshot-stamp $2"
             shift
             ;;
         -?*)
@@ -178,7 +183,7 @@ lxc exec lp-$SERIES-${ARCH} -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.
 time /usr/share/launchpad-buildd/bin/in-target buildlivefs \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
   --project $PROJECT $SUBPROJECT --datestamp $SERIAL --image-format $IMG_FORMAT \
-  $IMAGE_TARGET
+  $IMAGE_TARGET $REPO_SNAPSHOT
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
 rm -rf $OUTPUT_DIRECTORY
