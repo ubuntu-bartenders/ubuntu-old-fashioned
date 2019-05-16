@@ -16,6 +16,7 @@ CLEANUP=true
 IMAGE_TARGET=""
 REPO_SNAPSHOT=""
 SNAP_COHORT=""
+INTERACTIVE_HOOKS=false
 
 while :; do
     case "$1" in
@@ -61,6 +62,10 @@ while :; do
             ;;
         --snap-cohort-key)
             SNAP_COHORT="--cohort-key $2"
+            shift
+            ;;
+        --interactive-hooks)
+            INTERACTIVE_HOOKS=true
             shift
             ;;
         -?*)
@@ -110,6 +115,7 @@ set -xe
 
 OLD_FASHIONED_BUILD_CACHE="/tmp/old-fashioned-builder"
 UAT_CHECKOUT="$OLD_FASHIONED_BUILD_CACHE/uat"
+LIVECD_ROOTFS_COPY="$OLD_FASHIONED_BUILD_CACHE/livecd-rootfs"
 CHROOT_ARCHIVE_NAME="chroot-ubuntu-$SERIES-${ARCH}.tar.bz"
 CHROOT_ARCHIVE="$OLD_FASHIONED_BUILD_CACHE/$CHROOT_ARCHIVE_NAME"
 OUTPUT_DIRECTORY=~/build.output
@@ -117,6 +123,36 @@ LIVEFS_NAME="LOCAL_IMAGES_BUILD"
 SERIAL="$(date +%Y%m%d.%H%M)"
 
 mkdir -p $OLD_FASHIONED_BUILD_CACHE
+
+if [ $INTERACTIVE_HOOKS = true ] ; then
+    rm -rf $LIVECD_ROOTFS_COPY
+    cp -aR ./ $LIVECD_ROOTFS_COPY
+    cd $LIVECD_ROOTFS_COPY
+
+    cat > 001-debug.binary << "EOF"
+#!/bin/bash
+
+mknod debug.in p
+
+at_exit() {
+    rm -f debug.in
+}
+trap at_exit EXIT
+
+/bin/bash -x < debug.in 2>&1 &
+
+pid=$!
+
+while ps -p $pid >/dev/null 2>&1
+do
+    sleep 1
+done > debug.in
+EOF
+
+    rename 's/.binary$/.binary.disabled/' $(find live-build -name '*.binary')
+    find live-build -type d -name 'hooks' -exec cp 001-debug.binary {} \;
+    rm 001-debug.binary
+fi
 
 # Get the chroot filesystem from Launchpad if there isn't already one locally
 # we could reuse.
