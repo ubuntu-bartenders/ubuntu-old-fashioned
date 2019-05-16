@@ -17,6 +17,7 @@ IMAGE_TARGET=""
 REPO_SNAPSHOT=""
 SNAP_COHORT=""
 INTERACTIVE_HOOKS=false
+HOOK_BASEDIR="hooks"
 
 while :; do
     case "$1" in
@@ -66,6 +67,9 @@ while :; do
             ;;
         --interactive-hooks)
             INTERACTIVE_HOOKS=true
+            ;;
+        --hook-basedir)
+            HOOK_BASEDIR="$2"
             shift
             ;;
         -?*)
@@ -129,6 +133,8 @@ if [ $INTERACTIVE_HOOKS = true ] ; then
     cp -aR ./ $LIVECD_ROOTFS_COPY
     cd $LIVECD_ROOTFS_COPY
 
+    rename 's/.binary$/.disabled/' $(find live-build -path "*$HOOK_BASEDIR/*.binary")
+
     cat > 001-debug.binary << "EOF"
 #!/bin/bash
 
@@ -149,8 +155,8 @@ do
 done > debug.in
 EOF
 
-    rename 's/.binary$/.binary.disabled/' $(find live-build -name '*.binary')
-    find live-build -type d -name 'hooks' -exec cp 001-debug.binary {} \;
+    chmod +x 001-debug.binary
+    find live-build -type d -name "$HOOK_BASEDIR" -exec cp 001-debug.binary {} \;
     rm 001-debug.binary
 fi
 
