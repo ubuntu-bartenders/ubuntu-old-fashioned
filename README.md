@@ -14,6 +14,11 @@ Well look no more!
 This script is meant to let you build ubuntu cloud images locally from a
 livecd-rootfs checkout.
 
+Want this to be even simpler? Don't want to check anything out yourself?
+
+Use the [Ubuntu Bartender](scripts/ubuntu-bartender/ubuntu-bartender) to
+manage the Ubuntu Old Fashioned build for you.
+
 ## Installation
 
 On Ubuntu (**only works for Xenial**):
