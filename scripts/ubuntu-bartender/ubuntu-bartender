@@ -60,7 +60,7 @@ HOOK_EXTRAS_BRANCH=''
 # that can be configured as well:
 
 MULTIPASS_VM_DISK_SIZE='50G'
-MULTIPASS_VM_MEM_SIZE='16G'
+MULTIPASS_VM_MEM_SIZE='8G'
 
 # You shouldn't modify this script to change these default values.
 # Instead, put your personal configuration in a user config:
