@@ -1,0 +1,260 @@
+#!/bin/bash -e
+
+############ The Ubuntu Bartender #############################################
+
+# Sometimes you just want an Ubuntu Old Fashioned [1], but you don't want to
+# make it yourself.
+
+# Sometimes you just want someone else to gather the ingredients, make the
+# drink for you, and clean up afterwards.
+
+# So sit back, relax, and let the Ubuntu Bartender do the work for you.
+
+# 1: https://github.com/chrisglass/ubuntu-old-fashioned
+
+############ Overview #########################################################
+
+# This script will collect all the required bits Ubuntu Old Fashioned
+# needs to build Ubuntu images, build those images for you, then clean up
+# afterwards.
+
+# A simple bionic build can be accomplished with the incantation:
+
+# ./ubuntu-bartender --livecd-rootfs-branch ubuntu/bionic -- --series bionic
+
+# Arguments specified after the -- are used by Ubuntu Old Fashioned directly.
+
+############ Dependencies #####################################################
+
+# The Ubuntu Bartender requires the following executables to be in the PATH:
+
+dependencies="multipass petname git"
+
+# Which we verify before moving on:
+
+for dependency in $dependencies
+do
+  if ! which $dependency &>/dev/null
+  then
+    echo "error: $dependency was not found in PATH" >&2
+    print-usage
+    exit 255
+  fi
+done
+
+############ Configuration ####################################################
+
+# The Ubuntu Bartender needs to know the location of a few git repositories:
+
+UBUNTU_OLD_FASHIONED_REPO='https://github.com/chrisglass/ubuntu-old-fashioned.git'
+LIVECD_ROOTFS_REPO='https://git.launchpad.net/livecd-rootfs'
+HOOK_EXTRA_REPO=''
+
+# And the any specific branches for each that should be used:
+
+UBUNTU_OLD_FASHIONED_BRANCH='master'
+LIVECD_ROOTFS_BRANCH='ubuntu/master'
+HOOK_EXTRAS_BRANCH=''
+
+# The Ubuntu Bartender utilizes a Multipass VM to build Ubuntu Images
+# that can be configured as well:
+
+MULTIPASS_VM_DISK_SIZE='50G'
+MULTIPASS_VM_MEM_SIZE='16G'
+
+# You shouldn't modify this script to change these default values.
+# Instead, put your personal configuration in a user config:
+
+user_conf="$HOME/.ubuntu-bartender.conf"
+
+if [ -f "$user_conf" ]
+then
+  source "$user_conf"
+fi
+
+# The Ubuntu Bartender can be invoked with series specific helper scripts that
+# can save you from needing to manually specify the correct livecd_rootfs branch
+# and series.
+
+# For example, instead of running:
+
+# ./ubuntu-bartender --livecd-rootfs-branch ubuntu/bionic -- --series bionic
+
+# You can run this instead:
+
+# ./ubuntu-bionic-bartender
+
+# This is accomplished by parsing the name of the command that invoked
+# this script and setting the relevant variables. Note that this will
+# take precedence over what's specified in a user config:
+
+maybe_series=$(basename $0 | cut -d'-' -f2)
+if [ "$maybe_series" != "bartender" ]
+then
+  series_flag="--series $maybe_series"
+  LIVECD_ROOTFS_BRANCH="ubuntu/$maybe_series"
+else
+  series_flag=""
+fi
+
+# Or you can specify values on the command line.
+# These take precedence over everything:
+
+function print-usage {
+  cat << EOF >&2
+usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
+
+    --livecd-rootfs-repo <url>              The url to the git repo hosting livecd-rootfs.
+                                            Value: $LIVECD_ROOTFS_REPO
+
+    --livecd-rootfs-branch <branch>         The branch of livecd-rootfs to use.
+                                            Value: $LIVECD_ROOTFS_BRANCH
+
+    --ubuntu-old-fashioned-repo <url>       The url to the git repo hosting ubuntu-old-fashioned.
+                                            Value: $UBUNTU_OLD_FASHIONED_REPO
+
+    --ubuntu-old-fashioned-branch <branch>  The branch of ubuntu-old-fashioned to use.
+                                            Value: $UBUNTU_OLD_FASHIONED_BRANCH
+
+    --hook-extras-repo <url>                The url to a git repo hosting extra hooks.
+                                            Value: ${HOOK_EXTRA_REPO:-None}
+
+    --hook-extras-branch <branch>           The branch of the extras-repo to use.
+                                            Value: ${HOOK_EXTRAS_BRANCH:-None}
+
+    --multipass-vm-disk-size <size>         The disk size to use for the multipass vm.
+                                            Value: $MULTIPASS_VM_DISK_SIZE
+
+    --multipass-vm-mem-size <size>          The amount of ram to use for the multipass vm.
+                                            Value: $MULTIPASS_VM_MEM_SIZE
+
+    --help                                  Print this help message.
+
+Options specified after '--' separator are used by Ubuntu Old Fashioned directly.
+
+EOF
+}
+
+# Which we parse with the typical boilerplate:
+
+while [[ $# -gt 0 ]]
+do
+  case $1 in
+    --livecd-rootfs-repo)
+      LIVECD_ROOTFS_REPO="$2"
+      shift
+      ;;
+    --livecd-rootfs-branch)
+      LIVECD_ROOTFS_BRANCH="$2"
+      shift
+      ;;
+    --ubuntu-old-fashioned-repo)
+      UBUNTU_OLD_FASHIONED_REPO="$2"
+      shift
+      ;;
+    --ubuntu-old-fashioned-branch)
+      UBUNTU_OLD_FASHIONED_BRANCH="$2"
+      shift
+      ;;
+    --hook-extras-repo)
+      HOOK_EXTRA_REPO="$2"
+      shift
+      ;;
+    --hook-extras-branch)
+      HOOK_EXTRAS_BRANCH="$2"
+      shift
+      ;;
+    --multipass-vm-disk-size)
+      MULTIPASS_VM_DISK_SIZE="$2"
+      shift
+      ;;
+    --multipass-vm-mem-size)
+      MULTIPASS_VM_MEM_SIZE="$2"
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    --help)
+      print-usage
+      exit 255
+      ;;
+    *)
+      echo "error: unknown option '$1'" >&2
+      print-usage
+      exit 255
+      ;;
+  esac
+  shift
+done
+
+# The --series flag is required by ubuntu-old-fashioned for image builds,
+# so we check to make sure we have it before moving on:
+
+if [ -z "$series_flag" ] && ! echo -- $@ | grep -q -- --series
+then
+  echo "error: the '--series' option is required by ubuntu-old-fashioned" >&2
+  print-usage
+  exit 255
+fi
+
+############ Where the Magic Happens ##########################################
+
+# Let's use multipass to build all the things!
+
+temp_dir=$(mktemp --directory)
+bartender_name=$(petname)-ubuntu-bartender
+drink_name=${bartender_name/-bartender/-on-the-rocks.tar.gz}
+
+function cleanup {
+  echo "Cleaning up..."
+  rm -rf $temp_dir
+  multipass delete -p $bartender_name
+}
+trap cleanup EXIT
+
+multipass launch --disk $MULTIPASS_VM_DISK_SIZE \
+                 --mem $MULTIPASS_VM_MEM_SIZE \
+                 --name $bartender_name \
+                 daily:x
+
+(
+  cd $temp_dir
+  echo "Preparing ingredients..."
+  git clone -qb $UBUNTU_OLD_FASHIONED_BRANCH $UBUNTU_OLD_FASHIONED_REPO
+  git clone -qb $LIVECD_ROOTFS_BRANCH $LIVECD_ROOTFS_REPO
+  if [ -n "$HOOK_EXTRA_REPO" ]
+  then
+    branch_flag=" "
+    if [ -n "$HOOK_EXTRAS_BRANCH" ]
+    then
+      branch_flag="-b $HOOK_EXTRAS_BRANCH"
+    fi
+    git clone -q $branch_flag $HOOK_EXTRA_REPO extras
+    find livecd-rootfs/live-build/ -type d -name '*hooks*' |
+      xargs -I {} cp -af extras/* {}
+  fi
+
+  cat > mix-old-fashioned << EOF
+#!/bin/bash -x
+sudo add-apt-repository -y -u ppa:launchpad/ppa
+sudo apt-get -q update
+sudo apt-get -q install -y launchpad-buildd bzr python-ubuntutools git
+cd livecd-rootfs
+sudo -E ../ubuntu-old-fashioned/old-fashioned-image-build $series_flag $@
+EOF
+
+  tar czf ingredients.tar.gz *
+  multipass transfer ingredients.tar.gz $bartender_name:
+)
+
+echo "Mixing drink. This may take a while..."
+echo "(See progress in $bartender_name.log)"
+multipass exec $bartender_name -- tar xf ingredients.tar.gz
+multipass exec $bartender_name -- bash mix-old-fashioned &>$bartender_name.log </dev/null
+multipass exec $bartender_name -- tar czf drink.tar.gz build.output
+
+echo "Pouring $drink_name..."
+multipass transfer $bartender_name:drink.tar.gz $drink_name
+
