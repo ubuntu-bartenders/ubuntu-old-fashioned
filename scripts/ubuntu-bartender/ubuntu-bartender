@@ -48,7 +48,7 @@ done
 
 UBUNTU_OLD_FASHIONED_REPO='https://github.com/chrisglass/ubuntu-old-fashioned.git'
 LIVECD_ROOTFS_REPO='https://git.launchpad.net/livecd-rootfs'
-HOOK_EXTRA_REPO=''
+HOOK_EXTRAS_REPO=''
 
 # And the any specific branches for each that should be used:
 
@@ -117,7 +117,7 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             Value: $UBUNTU_OLD_FASHIONED_BRANCH
 
     --hook-extras-repo <url>                The url to a git repo hosting extra hooks.
-                                            Value: ${HOOK_EXTRA_REPO:-None}
+                                            Value: ${HOOK_EXTRAS_REPO:-None}
 
     --hook-extras-branch <branch>           The branch of the extras-repo to use.
                                             Value: ${HOOK_EXTRAS_BRANCH:-None}
@@ -157,7 +157,7 @@ do
       shift
       ;;
     --hook-extras-repo)
-      HOOK_EXTRA_REPO="$2"
+      HOOK_EXTRAS_REPO="$2"
       shift
       ;;
     --hook-extras-branch)
@@ -224,14 +224,14 @@ multipass launch --disk $MULTIPASS_VM_DISK_SIZE \
   echo "Preparing ingredients..."
   git clone -qb $UBUNTU_OLD_FASHIONED_BRANCH $UBUNTU_OLD_FASHIONED_REPO
   git clone -qb $LIVECD_ROOTFS_BRANCH $LIVECD_ROOTFS_REPO
-  if [ -n "$HOOK_EXTRA_REPO" ]
+  if [ -n "$HOOK_EXTRAS_REPO" ]
   then
     branch_flag=" "
     if [ -n "$HOOK_EXTRAS_BRANCH" ]
     then
       branch_flag="-b $HOOK_EXTRAS_BRANCH"
     fi
-    git clone -q $branch_flag $HOOK_EXTRA_REPO extras
+    git clone -q $branch_flag $HOOK_EXTRAS_REPO extras
     find livecd-rootfs/live-build/ -type d -name '*hooks*' |
       xargs -I {} cp -af extras/* {}
   fi
@@ -242,7 +242,7 @@ sudo add-apt-repository -y -u ppa:launchpad/ppa
 sudo apt-get -q update
 sudo apt-get -q install -y launchpad-buildd bzr python-ubuntutools git
 cd livecd-rootfs
-sudo -E ../ubuntu-old-fashioned/old-fashioned-image-build $series_flag $@
+sudo -E ../ubuntu-old-fashioned/old-fashioned-image-build --no-cleanup $series_flag $@
 EOF
 
   tar czf ingredients.tar.gz *
