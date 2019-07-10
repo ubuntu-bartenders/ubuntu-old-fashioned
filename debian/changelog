@@ -1,3 +1,11 @@
+oldfashioned (1.6~16.04) xenial; urgency=medium
+
+  * Add ubuntu-bartender script
+  * Support ppc64el architecture
+  * Add --extra-ppa flag
+
+ -- David Krauser (Canonical) <david.krauser@canonical.com>  Wed, 10 Jul 2019 15:34:00 -0400
+
 oldfashioned (1.5~16.04) xenial; urgency=medium
 
   * Remove "hostname hack".
