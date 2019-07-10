@@ -20,21 +20,12 @@ PKG_INSTALL_CMDS = [
     ["sudo", "add-apt-repository", "-y", "ppa:cloud-images/old-fashioned"],
     ["sudo", "add-apt-repository", "-y", "ppa:launchpad/ppa"],
     ["sudo", "apt-get", "update"],
+    ["sudo", "apt-get", "install", "-y", "python-distro-info"],
     ["sudo", "apt-get", "install", "-y", "oldfashioned"],
     ["sudo", "apt-get", "install", "-y", "launchpad-buildd", "bzr",
      "python-ubuntutools",
      ],
 ]
-
-LIVECD_ROOTFS_OPTIONS = {
-    '1': 'master',
-    '2': 'cosmic',
-    '3': 'bionic',
-    '4': 'xenial',
-    '5': 'trusty',
-    '6': 'package',
-    '7': 'custom',
-}
 
 LIVECD_ROOTFS_GIT = "https://git.launchpad.net/livecd-rootfs"
 
@@ -101,6 +92,14 @@ if __name__ == '__main__':
     for cmd in PKG_INSTALL_CMDS:
         call(cmd)
 
+    from distro_info import UbuntuDistroInfo
+
+    supported_suites = UbuntuDistroInfo.supported()
+    extra_options = ['master', 'package', 'custom', 'none']
+    user_options = supported_suites + extra_options
+    user_options -= UbuntuDistroInfo.devel()
+    LIVECD_ROOTFS_OPTIONS = {i: opt for i, opt in enumerate(user_options)}
+
     print()
     print("Choose livecd-rootfs branch/option")
     print_sorted(LIVECD_ROOTFS_OPTIONS)
@@ -113,14 +112,18 @@ if __name__ == '__main__':
             print("Please choose from the options listed.")
             print_sorted(LIVECD_ROOTFS_OPTIONS)
 
-    if int(choice) < 6:
+    selection = LIVECD_ROOTFS_OPTIONS[int(choice)]
+
+    if selection not in extra_options:
         cmd = ["git", "clone", "-b",
                'ubuntu/{}'.format(LIVECD_ROOTFS_OPTIONS[choice]),
                LIVECD_ROOTFS_GIT]
-    elif choice == '6':
+    elif selection == 'package':
         cmd = ["sudo", "apt-get", "install", "-y", "livecd-rootfs"]
-    else:
+    elif selection == 'custom':
         cmd = input_repo()
+    else:
+        print("'none' option selected. Skipping livecd-rootfs install...")
 
     repo_dir = "/livecd-rootfs"
     parent_dir = os.path.abspath(os.path.join("./", os.pardir))
