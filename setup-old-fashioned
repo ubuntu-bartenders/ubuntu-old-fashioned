@@ -10,7 +10,6 @@ appropriate hooks directory.
 
 """
 import os
-import site
 
 from subprocess import call, PIPE, run
 
@@ -81,14 +80,17 @@ def input_repo():
 
     return cmd
 
+
 def print_sorted(d):
     ordered = sorted(list(d.keys()), key=lambda x: int(x))
     for key in ordered:
         print("{}: {}".format(key, d.get(key)))
 
+
 def ubuntu_distro_info(options):
     return run("ubuntu-distro-info {}".format(options).split(),
                stdout=PIPE).stdout.decode("utf-8").split('\n')
+
 
 if __name__ == '__main__':
     if '16.04' not in platform.linux_distribution():
@@ -100,7 +102,7 @@ if __name__ == '__main__':
 
     supported_suites = ubuntu_distro_info("--supported")
     devel_suites = ubuntu_distro_info("--devel")
-    suites_with_branches = [suite for suite in supported_suites if \
+    suites_with_branches = [suite for suite in supported_suites if
                             suite not in devel_suites]
     devel_release_branch = ['master']
     extra_options = ['package', 'custom', 'none']
