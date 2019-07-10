@@ -14,6 +14,8 @@ SERIES=""
 USE_CHROOT_CACHE=false
 CLEANUP=true
 IMAGE_TARGET=""
+REPO_SNAPSHOT=""
+SNAP_COHORT=""
 EXTRA_PPA=""
 
 while :; do
@@ -58,6 +60,14 @@ while :; do
             IMAGE_TARGET="$IMAGE_TARGET --image-target $2"
             shift
             ;;
+        --repo-snapshot-stamp)
+            REPO_SNAPSHOT="--repo-snapshot-stamp $2"
+            shift
+            ;;
+        --snap-cohort-key)
+            SNAP_COHORT="--cohort-key $2"
+            shift
+            ;;
         -?*)
             echo "WARNING: Unknown option or argument ignored: $1"
             exit 1
@@ -72,7 +82,8 @@ done
 case `arch` in
     aarch64) ARCH=arm64;;
     x86_64) ARCH=amd64;;
-    *) echo "Unrecognized arch"; exit 1;;
+    ppc64le) ARCH=ppc64el;;
+    *) echo "Unrecognized arch: $(arch)"; exit 1;;
 esac
 
 if [ x$SERIES = "x" ] ; then
@@ -184,7 +195,7 @@ time /usr/share/launchpad-buildd/bin/in-target buildlivefs \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
   --project $PROJECT $SUBPROJECT --datestamp $SERIAL --image-format $IMG_FORMAT \
   $EXTRA_PPA \
-  $IMAGE_TARGET
+  $IMAGE_TARGET $REPO_SNAPSHOT $SNAP_COHORT
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
 rm -rf $OUTPUT_DIRECTORY
