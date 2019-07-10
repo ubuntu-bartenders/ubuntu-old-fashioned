@@ -10,8 +10,9 @@ appropriate hooks directory.
 
 """
 import os
+import site
 
-from subprocess import call
+from subprocess import call, PIPE, run
 
 import platform
 from typing import Dict, List, Text, Tuple  # noqa
@@ -20,10 +21,9 @@ PKG_INSTALL_CMDS = [
     ["sudo", "add-apt-repository", "-y", "ppa:cloud-images/old-fashioned"],
     ["sudo", "add-apt-repository", "-y", "ppa:launchpad/ppa"],
     ["sudo", "apt-get", "update"],
-    ["sudo", "apt-get", "install", "-y", "python-distro-info"],
     ["sudo", "apt-get", "install", "-y", "oldfashioned"],
     ["sudo", "apt-get", "install", "-y", "launchpad-buildd", "bzr",
-     "python-ubuntutools",
+     "python-ubuntutools", "distro-info",
      ],
 ]
 
@@ -50,7 +50,7 @@ def input_repo():
     while choice not in ks:
         choice = input("> ")
         if choice not in ks:
-            print("Please choose from the options listed.")
+            print("Please choose a VCS from the options listed.")
             print_opts(ks)
 
     cmd = [vcs[choice]]
@@ -59,8 +59,11 @@ def input_repo():
     else:
         cmd += ["branch"]
 
-    print("Please enter the repo you would like to clone:")
-    repo = input("> ")
+    repo_prompt = ("Please enter the repo you would like to clone, as well "
+                   "as any additional options to the 'git clone' command:")
+    prompt = "> "
+    print(repo_prompt)
+    repo = input(prompt)
 
     correct = False
     done = "n"
@@ -71,63 +74,64 @@ def input_repo():
         if done.lower()[0] == 'y':
             break
         else:
-            print("Please enter the repo you would like to clone:")
-            repo = input("> ")
+            print(repo_prompt)
+            repo = input(prompt)
 
-    cmd += repo.split(' ')
+    cmd += repo.split()
 
     return cmd
 
+def print_sorted(d):
+    ordered = sorted(list(d.keys()), key=lambda x: int(x))
+    for key in ordered:
+        print("{}: {}".format(key, d.get(key)))
+
+def ubuntu_distro_info(options):
+    return run("ubuntu-distro-info {}".format(options).split(),
+               stdout=PIPE).stdout.decode("utf-8").split('\n')
 
 if __name__ == '__main__':
     if '16.04' not in platform.linux_distribution():
         print("Old-fashioned must be run on Xenial Ubuntu.")
         exit(1)
 
-    def print_sorted(d):
-        ordered = sorted(list(d.keys()), key=lambda x: int(x))
-        for key in ordered:
-            print("{}: {}".format(key, d.get(key)))
-
     for cmd in PKG_INSTALL_CMDS:
         call(cmd)
 
-    from distro_info import UbuntuDistroInfo
-
-    supported_suites = UbuntuDistroInfo.supported()
-    extra_options = ['master', 'package', 'custom', 'none']
-    user_options = supported_suites + extra_options
-    user_options -= UbuntuDistroInfo.devel()
-    LIVECD_ROOTFS_OPTIONS = {i: opt for i, opt in enumerate(user_options)}
-
-    print()
-    print("Choose livecd-rootfs branch/option")
-    print_sorted(LIVECD_ROOTFS_OPTIONS)
+    supported_suites = ubuntu_distro_info("--supported")
+    devel_suites = ubuntu_distro_info("--devel")
+    suites_with_branches = [suite for suite in supported_suites if \
+                            suite not in devel_suites]
+    devel_release_branch = ['master']
+    extra_options = ['package', 'custom', 'none']
+    user_options = suites_with_branches + devel_release_branch + extra_options
+    LIVECD_ROOTFS_OPTIONS = {str(i): opt for i, opt in enumerate(user_options)}
 
     ks = LIVECD_ROOTFS_OPTIONS.keys()
     choice = ""
     while choice not in ks:
+        print()
+        print("Please choose from the options listed.")
+        print_sorted(LIVECD_ROOTFS_OPTIONS)
         choice = input("> ")
-        if choice not in ks:
-            print("Please choose from the options listed.")
-            print_sorted(LIVECD_ROOTFS_OPTIONS)
 
-    selection = LIVECD_ROOTFS_OPTIONS[int(choice)]
+    selection = LIVECD_ROOTFS_OPTIONS[choice]
 
     if selection not in extra_options:
         cmd = ["git", "clone", "-b",
                'ubuntu/{}'.format(LIVECD_ROOTFS_OPTIONS[choice]),
                LIVECD_ROOTFS_GIT]
+        repo_dir = "/livecd-rootfs"
+        parent_dir = os.path.abspath(os.path.join("./", os.pardir))
+        cmd += [parent_dir + repo_dir]
     elif selection == 'package':
         cmd = ["sudo", "apt-get", "install", "-y", "livecd-rootfs"]
     elif selection == 'custom':
         cmd = input_repo()
     else:
+        cmd = []
         print("'none' option selected. Skipping livecd-rootfs install...")
 
-    repo_dir = "/livecd-rootfs"
-    parent_dir = os.path.abspath(os.path.join("./", os.pardir))
-    cmd += [parent_dir + repo_dir]
     print("Executing {}".format(' '.join(cmd)))
     call(cmd)
 
