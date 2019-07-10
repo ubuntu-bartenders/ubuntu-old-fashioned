@@ -16,6 +16,7 @@ CLEANUP=true
 IMAGE_TARGET=""
 REPO_SNAPSHOT=""
 SNAP_COHORT=""
+EXTRA_PPA=""
 
 while :; do
     case "$1" in
@@ -24,6 +25,10 @@ while :; do
             ;;
         --subproject)
             SUBPROJECT="--subproject $2"
+            shift
+            ;;
+        --extra-ppa)
+            EXTRA_PPA="--extra-ppa \"$2\""
             shift
             ;;
         --img_format)
@@ -189,6 +194,7 @@ lxc exec lp-$SERIES-${ARCH} -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.
 time /usr/share/launchpad-buildd/bin/in-target buildlivefs \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
   --project $PROJECT $SUBPROJECT --datestamp $SERIAL --image-format $IMG_FORMAT \
+  $EXTRA_PPA \
   $IMAGE_TARGET $REPO_SNAPSHOT $SNAP_COHORT
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
