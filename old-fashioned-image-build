@@ -77,7 +77,8 @@ done
 case `arch` in
     aarch64) ARCH=arm64;;
     x86_64) ARCH=amd64;;
-    *) echo "Unrecognized arch"; exit 1;;
+    ppc64le) ARCH=ppc64el;;
+    *) echo "Unrecognized arch: $(arch)"; exit 1;;
 esac
 
 if [ x$SERIES = "x" ] ; then
