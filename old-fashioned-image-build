@@ -21,27 +21,41 @@ EXTRA_PPA=""
 while :; do
     case "$1" in
         --minimized)
+            # Pass this flag to build the 'minimal' image family
             SUBPROJECT="--subproject minimized"
             ;;
         --subproject)
+            # Depends on project
+            # Subprojects are handled by scripts in 
+            #   livecd-rootfs/live-build/auto/, as well as by individual hooks
+            # e.g. 'buildd'
             SUBPROJECT="--subproject $2"
             shift
             ;;
         --extra-ppa)
+            # inject public ppas into the build environment
+            # e.g. 'lp:mylpname/someppa'
             EXTRA_PPA="--extra-ppa \"$2\""
             shift
             ;;
         --img_format)
+            # Corresponds to the '--image-format' option for livecd-rootfs
+            # e.g. 'ext4'
             IMG_FORMAT="$2"
             shift
             ;;
         --project)
+            # Default for Old-Fashioned is 'ubuntu-cpc'
+            # Corresponds to the '--project' option for livecd-rootfs
+            # e.g. 'ubuntu-cpc' or 'ubuntu-base'
             if [ "$2" ]; then
                 PROJECT="$2"
                 shift
             fi
             ;;
         --series)
+            # The name of the series/suite to build
+            # e.g. 'bionic'
             if [ "$2" ]; then
                 SERIES="$2"
                 shift
@@ -51,20 +65,34 @@ while :; do
             fi
             ;;
         --use-chroot-cache)
+            # pass this flag to avoid rebuilding chroot again if it's already
+            # been built
             USE_CHROOT_CACHE=true
             ;;
         --no-cleanup)
+            # pass this flag to keep the lxd build environment after build has
+            # finished or failed
             CLEANUP=false
             ;;
         --image-target)
+            # Specify a class of hooks to build, corresponding to those
+            # specified in <project>/hooks.d/extra/series
+            # e.g. 'ec2'
             IMAGE_TARGET="$IMAGE_TARGET --image-target $2"
             shift
             ;;
         --repo-snapshot-stamp)
+            # Specify a snapshot of the apt package repo for use across
+            # parallel builds
+            # input to this argument is the output of `date +%s`
+            # e.g. '1563222269'
             REPO_SNAPSHOT="--repo-snapshot-stamp $2"
             shift
             ;;
         --snap-cohort-key)
+            # specify a snap cohort key to include the same set of snaps across
+            # builds (this is occasionally broken by the snap store)
+            # As of 20190715 this snap feature is still in beta
             SNAP_COHORT="--cohort-key $2"
             shift
             ;;
