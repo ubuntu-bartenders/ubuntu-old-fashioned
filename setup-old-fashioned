@@ -124,8 +124,8 @@ if __name__ == '__main__':
                'ubuntu/{}'.format(LIVECD_ROOTFS_OPTIONS[choice]),
                LIVECD_ROOTFS_GIT]
         repo_dir = "/livecd-rootfs"
-        parent_dir = os.path.abspath(os.path.join("./", os.pardir))
-        cmd += [parent_dir + repo_dir]
+        home_dir = os.path.expanduser("~")
+        cmd += [home_dir + repo_dir]
     elif selection == 'package':
         cmd = ["sudo", "apt-get", "install", "-y", "livecd-rootfs"]
     elif selection == 'custom':
