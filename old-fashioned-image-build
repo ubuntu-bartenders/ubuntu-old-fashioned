@@ -38,7 +38,7 @@ while :; do
             EXTRA_PPA="--extra-ppa \"$2\""
             shift
             ;;
-        --img_format)
+        --image-format|--img_format)
             # Corresponds to the '--image-format' option for livecd-rootfs
             # e.g. 'ext4'
             IMG_FORMAT="$2"
