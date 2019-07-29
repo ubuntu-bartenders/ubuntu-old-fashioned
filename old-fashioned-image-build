@@ -31,7 +31,7 @@ while :; do
             EXTRA_PPA="--extra-ppa \"$2\""
             shift
             ;;
-        --img_format)
+        --image-format|--img_format)
             IMG_FORMAT="$2"
             shift
             ;;
