@@ -251,13 +251,13 @@ EOF
 
   tar czf ingredients.tar.gz ./*
   build-provider-upload $bartender_name ingredients.tar.gz ingredients.tar.gz
+  build-provider-run $bartender_name -- tar xf ingredients.tar.gz
 )
 
 echo "Mixing drink..."
 echo "(See progress in $bartender_name.log)"
-build-provider-run $bartender_name -- tar xf ingredients.tar.gz
 build-provider-run $bartender_name -- bash mix-old-fashioned &>$bartender_name.log </dev/null
-build-provider-run $bartender_name -- tar czf drink.tar.gz build.output
 
 echo "Pouring $drink_name..."
+build-provider-run $bartender_name -- tar czf drink.tar.gz build.output
 build-provider-download $bartender_name drink.tar.gz $drink_name
