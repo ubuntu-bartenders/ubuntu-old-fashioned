@@ -1,0 +1,101 @@
+function _find-ami() {
+  AMI_FILTERS="--filters Name=name,Values=ubuntu/images-testing/hvm-ssd/ubuntu-xenial-daily-amd64-server-*"
+  aws --region "$region" ec2 describe-images \
+      --owners 099720109477 $AMI_FILTERS --output json |
+    jq -r '.Images | sort_by(.["CreationDate"])[-1].ImageId'
+}
+
+function _wait-instance-running() {
+  for attempt in $(seq 12); do
+    state=$(aws --output json --region "$region" \
+                ec2 describe-instances \
+                --instance-ids "$instance_id" |
+              jq -r '.Reservations[0].Instances[0].State.Name')
+    if [ "$state" != "running" ]; then
+      sleep 10
+    else
+      break
+    fi
+  done
+
+  if [ "$state" != "running" ]; then
+    echo "error: instance did not enter 'running' state after 2 minutes"
+    exit 255
+  fi
+}
+
+function _wait-instance-connectable() {
+  for attempt in $(seq 12); do
+    if ! ssh -qo StrictHostKeyChecking=no "ubuntu@$ip_addr" -- true; then
+      sleep 10 
+    else
+      state=connectable
+      break
+    fi
+  done
+
+  if [ "$state" != "connectable" ]; then
+    echo "error: instance not 'connectable' after 2 minutes"
+    exit 255
+  fi
+}
+
+function build-provider-assert-ready {
+  if ! command -v aws &>/dev/null
+  then
+    echo "error: aws-cli was not found in PATH" >&2
+    exit 255
+  fi
+
+  if ! command -v jq &>/dev/null
+  then
+    echo "error: jq was not found in PATH" >&2
+    exit 255
+  fi
+
+  if ! aws ec2 describe-key-pairs --key-names "$USER" 2>/dev/null >/dev/null; then
+    echo "error: no registered keypair available for $USER" >&2
+    exit 255
+  fi
+
+  region=$(aws configure get region)
+}
+
+function build-provider-destroy {
+  if [ -n "$instance_id" ]; then
+    echo "Destroying $1 on AWS..."
+    aws --region "$region" ec2 terminate-instances \
+        --instance-ids "$instance_id" &>/dev/null
+  fi
+}
+
+function build-provider-create {
+  echo "Creating $1 on AWS..."
+  instance_id=$(aws --output json --region "$region" \
+                    ec2 run-instances \
+                    --key-name "$USER" \
+                    --instance-type m5.large \
+                    --image-id "$(_find-ami)" \
+                    --block-device-mappings "DeviceName=/dev/sda1,Ebs={VolumeSize=50,VolumeType=gp2}" \
+                    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$1}]" |
+                  jq -r '.Instances[0].InstanceId')
+  _wait-instance-running
+  ip_addr=$(aws --output json --region "$region" ec2 describe-instances \
+                --instance-ids "$instance_id" |
+              jq -r '.Reservations[0].Instances[0].PublicIpAddress')
+  _wait-instance-connectable
+}
+
+function build-provider-upload {
+  scp -qo StrictHostKeyChecking=no "$2" "ubuntu@$ip_addr:$3"
+}
+
+function build-provider-download {
+  scp -qo StrictHostKeyChecking=no "ubuntu@$ip_addr:$2" "$3"
+}
+
+function build-provider-run {
+  args=$(echo -- $@ | sed 's/.*--//')
+  ssh -qo StrictHostKeyChecking=no "ubuntu@$ip_addr" -- $args
+}
+
