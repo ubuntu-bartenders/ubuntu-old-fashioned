@@ -61,6 +61,11 @@ HOOK_EXTRAS_BRANCH=''
 
 BUILD_PROVIDER=multipass
 
+# Should we tear down the build provider and clean up after ourselves
+# when the build is completed?
+
+SHOULD_CLEANUP=YES
+
 # You shouldn't modify this script to change these default values.
 # Instead, put your personal configuration in a user config:
 
@@ -125,6 +130,10 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             This can be either multipass or aws.
                                             Value: $BUILD_PROVIDER
 
+    --no-cleanup                            Don't tear down the build provider
+                                            after the build completes.
+                                            Value: Cleanup? $SHOULD_CLEANUP
+
     --help                                  Print this help message.
 
 Options specified after '--' separator are used by Ubuntu Old Fashioned directly.
@@ -164,6 +173,9 @@ do
     --build-provider)
       BUILD_PROVIDER="$2"
       shift
+      ;;
+    --no-cleanup)
+      SHOULD_CLEANUP=NO
       ;;
     --)
       shift
@@ -219,7 +231,10 @@ function cleanup {
   rm -rf $temp_dir
   build-provider-destroy $bartender_name
 }
-trap cleanup EXIT
+
+if [ "$SHOULD_CLEANUP" = "YES" ]; then
+  trap cleanup EXIT
+fi
 
 build-provider-create $bartender_name
 
