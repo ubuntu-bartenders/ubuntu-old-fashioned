@@ -34,8 +34,8 @@ while :; do
             ;;
         --extra-ppa)
             # inject public ppas into the build environment
-            # e.g. 'lp:mylpname/someppa'
-            EXTRA_PPA="--extra-ppa \"$2\""
+            # e.g. 'mylpname/someppa'
+            EXTRA_PPA="--extra-ppa $2"
             shift
             ;;
         --image-format|--img_format)
