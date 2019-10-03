@@ -24,6 +24,14 @@
 
 # Arguments specified after the -- are used by Ubuntu Old Fashioned directly.
 
+# The Ubuntu Bartender can also be invoked with series specific helper script
+# that can save you from needing to manually specify the correct livecd_rootfs
+# branch and series.
+
+# For example, this is identical to the invocation above:
+
+# ./ubuntu-bionic-bartender
+
 ############ Dependencies #####################################################
 
 # The Ubuntu Bartender requires the following executables to be in the PATH:
@@ -46,63 +54,39 @@ done
 
 # The Ubuntu Bartender needs to know the location of a few git repositories:
 
-UBUNTU_OLD_FASHIONED_REPO='https://github.com/chrisglass/ubuntu-old-fashioned.git'
-LIVECD_ROOTFS_REPO='https://git.launchpad.net/livecd-rootfs'
-HOOK_EXTRAS_REPO=''
+UBUNTU_OLD_FASHIONED_REPO=${UBUNTU_OLD_FASHIONED_REPO:-https://github.com/chrisglass/ubuntu-old-fashioned.git}
+LIVECD_ROOTFS_REPO=${LIVECD_ROOTFS_REPO:-https://git.launchpad.net/livecd-rootfs}
+HOOK_EXTRAS_REPO=${HOOK_EXTRAS_REPO:-}
 
-# And the any specific branches for each that should be used:
+# And any specific branches for each that should be used:
 
-UBUNTU_OLD_FASHIONED_BRANCH='master'
-LIVECD_ROOTFS_BRANCH='ubuntu/master'
-HOOK_EXTRAS_BRANCH=''
+UBUNTU_OLD_FASHIONED_BRANCH=${UBUNTU_OLD_FASHIONED_BRANCH:-master}
+# LIVECD_ROOTFS_BRANCH is inferred below from the script name
+HOOK_EXTRAS_BRANCH=${HOOK_EXTRAS_BRANCH:-}
 
 # The Ubuntu Bartender utilizes a build-provider to create Ubuntu Images.
 # We use multipass by default:
 
-BUILD_PROVIDER=multipass
+BUILD_PROVIDER=${BUILD_PROVIDER:-multipass}
 
 # Should we tear down the build provider and clean up after ourselves
 # when the build is completed?
 
-SHOULD_CLEANUP=YES
+SHOULD_CLEANUP=${SHOULD_CLEANUP:-YES}
 
-# You shouldn't modify this script to change these default values.
-# Instead, put your personal configuration in a user config:
-
-user_conf="$HOME/.ubuntu-bartender.conf"
-
-if [ -f "$user_conf" ]
-then
-  source "$user_conf"
-fi
-
-# The Ubuntu Bartender can be invoked with series specific helper scripts that
-# can save you from needing to manually specify the correct livecd_rootfs branch
-# and series.
-
-# For example, instead of running:
-
-# ./ubuntu-bartender --livecd-rootfs-branch ubuntu/bionic -- --series bionic
-
-# You can run this instead:
-
-# ./ubuntu-bionic-bartender
-
-# This is accomplished by parsing the name of the command that invoked
-# this script and setting the relevant variables. Note that this will
-# take precedence over what's specified in a user config:
+# Parse the name of the script to see if we can infer some variables
 
 maybe_series=$(basename $0 | cut -d'-' -f2)
 if [ "$maybe_series" != "bartender" ]
 then
   series_flag="--series $maybe_series"
-  LIVECD_ROOTFS_BRANCH="ubuntu/$maybe_series"
+  LIVECD_ROOTFS_BRANCH=${LIVECD_ROOTFS_BRANCH:-ubuntu/$maybe_series}
 else
   series_flag=""
+  LIVECD_ROOTFS_BRANCH=${LIVECD_ROOTFS_BRANCH:-ubuntu/master}
 fi
 
-# Or you can specify values on the command line.
-# These take precedence over everything:
+# We also pull in explicitly set variables on the command line
 
 function print-usage {
   cat << EOF >&2
@@ -182,17 +166,20 @@ do
       break
       ;;
     --help)
-      print-usage
-      exit 255
+      SHOW_HELP=YES
       ;;
     *)
       echo "error: unknown option '$1'" >&2
-      print-usage
       exit 255
       ;;
   esac
   shift
 done
+
+if [ "$SHOW_HELP" = "YES" ]; then
+  print-usage
+  exit 255
+fi
 
 # Verify that the specified build provider is available and ready
 
