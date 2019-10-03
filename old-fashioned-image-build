@@ -34,8 +34,8 @@ while :; do
             ;;
         --extra-ppa)
             # inject public ppas into the build environment
-            # e.g. 'lp:mylpname/someppa'
-            EXTRA_PPA="--extra-ppa \"$2\""
+            # e.g. 'mylpname/someppa'
+            EXTRA_PPA="--extra-ppa $2"
             shift
             ;;
         --image-format|--img_format)
@@ -217,6 +217,14 @@ lxc exec lp-$SERIES-${ARCH} -- mkdir -p /usr/share/livecd-rootfs
 tar czvf $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz .
 lxc file push $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz lp-$SERIES-${ARCH}/usr/share/livecd-rootfs/
 lxc exec lp-$SERIES-${ARCH} -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.gz -C /usr/share/livecd-rootfs/
+
+# Use qemu-backports to build xenial images. Otherwise, the images may not boot.
+if [ "$SERIES" = "xenial" ]; then
+  lxc exec lp-$SERIES-${ARCH} -- apt-get install -y software-properties-common
+  lxc exec lp-$SERIES-${ARCH} -- add-apt-repository -y ppa:cloud-images-release-managers/qemu-backports
+  lxc exec lp-$SERIES-${ARCH} -- apt-get update
+  lxc exec lp-$SERIES-${ARCH} -- apt-get install -y qemu-utils
+fi
 
 # Actually build.
 time /usr/share/launchpad-buildd/bin/in-target buildlivefs \

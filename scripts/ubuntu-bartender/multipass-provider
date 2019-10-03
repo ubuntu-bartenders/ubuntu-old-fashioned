@@ -1,0 +1,27 @@
+function build-provider-assert-ready {
+  if ! command -v multipass &>/dev/null
+  then
+    echo "error: multipass was not found in PATH" >&2
+    exit 255
+  fi
+}
+
+function build-provider-destroy {
+  multipass delete -p "$1"
+}
+
+function build-provider-create {
+  multipass launch --disk 50G --mem 8G --name "$1" daily:x
+}
+
+function build-provider-upload {
+  multipass transfer "$2" "$1:$3"
+}
+
+function build-provider-download {
+  multipass transfer "$1:$2" "$3"
+}
+
+function build-provider-run {
+  multipass exec $@
+}

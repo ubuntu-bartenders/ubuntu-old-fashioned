@@ -1,2 +1,3 @@
 old-fashioned-image-build usr/bin
 scripts/ubuntu-bartender/ubuntu*bartender usr/bin
+scripts/ubuntu-bartender/*provider usr/bin

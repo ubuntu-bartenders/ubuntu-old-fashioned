@@ -24,17 +24,25 @@
 
 # Arguments specified after the -- are used by Ubuntu Old Fashioned directly.
 
+# The Ubuntu Bartender can also be invoked with series specific helper script
+# that can save you from needing to manually specify the correct livecd_rootfs
+# branch and series.
+
+# For example, this is identical to the invocation above:
+
+# ./ubuntu-bionic-bartender
+
 ############ Dependencies #####################################################
 
 # The Ubuntu Bartender requires the following executables to be in the PATH:
 
-dependencies="multipass petname git"
+dependencies="petname git"
 
 # Which we verify before moving on:
 
 for dependency in $dependencies
 do
-  if ! which $dependency &>/dev/null
+  if ! command -v $dependency &>/dev/null
   then
     echo "error: $dependency was not found in PATH" >&2
     print-usage
@@ -46,59 +54,39 @@ done
 
 # The Ubuntu Bartender needs to know the location of a few git repositories:
 
-UBUNTU_OLD_FASHIONED_REPO='https://github.com/chrisglass/ubuntu-old-fashioned.git'
-LIVECD_ROOTFS_REPO='https://git.launchpad.net/livecd-rootfs'
-HOOK_EXTRAS_REPO=''
+UBUNTU_OLD_FASHIONED_REPO=${UBUNTU_OLD_FASHIONED_REPO:-https://github.com/chrisglass/ubuntu-old-fashioned.git}
+LIVECD_ROOTFS_REPO=${LIVECD_ROOTFS_REPO:-https://git.launchpad.net/livecd-rootfs}
+HOOK_EXTRAS_REPO=${HOOK_EXTRAS_REPO:-}
 
-# And the any specific branches for each that should be used:
+# And any specific branches for each that should be used:
 
-UBUNTU_OLD_FASHIONED_BRANCH='master'
-LIVECD_ROOTFS_BRANCH='ubuntu/master'
-HOOK_EXTRAS_BRANCH=''
+UBUNTU_OLD_FASHIONED_BRANCH=${UBUNTU_OLD_FASHIONED_BRANCH:-master}
+# LIVECD_ROOTFS_BRANCH is inferred below from the script name
+HOOK_EXTRAS_BRANCH=${HOOK_EXTRAS_BRANCH:-}
 
-# The Ubuntu Bartender utilizes a Multipass VM to build Ubuntu Images
-# that can be configured as well:
+# The Ubuntu Bartender utilizes a build-provider to create Ubuntu Images.
+# We use multipass by default:
 
-MULTIPASS_VM_DISK_SIZE='50G'
-MULTIPASS_VM_MEM_SIZE='8G'
+BUILD_PROVIDER=${BUILD_PROVIDER:-multipass}
 
-# You shouldn't modify this script to change these default values.
-# Instead, put your personal configuration in a user config:
+# Should we tear down the build provider and clean up after ourselves
+# when the build is completed?
 
-user_conf="$HOME/.ubuntu-bartender.conf"
+SHOULD_CLEANUP=${SHOULD_CLEANUP:-YES}
 
-if [ -f "$user_conf" ]
-then
-  source "$user_conf"
-fi
-
-# The Ubuntu Bartender can be invoked with series specific helper scripts that
-# can save you from needing to manually specify the correct livecd_rootfs branch
-# and series.
-
-# For example, instead of running:
-
-# ./ubuntu-bartender --livecd-rootfs-branch ubuntu/bionic -- --series bionic
-
-# You can run this instead:
-
-# ./ubuntu-bionic-bartender
-
-# This is accomplished by parsing the name of the command that invoked
-# this script and setting the relevant variables. Note that this will
-# take precedence over what's specified in a user config:
+# Parse the name of the script to see if we can infer some variables
 
 maybe_series=$(basename $0 | cut -d'-' -f2)
 if [ "$maybe_series" != "bartender" ]
 then
   series_flag="--series $maybe_series"
-  LIVECD_ROOTFS_BRANCH="ubuntu/$maybe_series"
+  LIVECD_ROOTFS_BRANCH=${LIVECD_ROOTFS_BRANCH:-ubuntu/$maybe_series}
 else
   series_flag=""
+  LIVECD_ROOTFS_BRANCH=${LIVECD_ROOTFS_BRANCH:-ubuntu/master}
 fi
 
-# Or you can specify values on the command line.
-# These take precedence over everything:
+# We also pull in explicitly set variables on the command line
 
 function print-usage {
   cat << EOF >&2
@@ -122,11 +110,13 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --hook-extras-branch <branch>           The branch of the extras-repo to use.
                                             Value: ${HOOK_EXTRAS_BRANCH:-None}
 
-    --multipass-vm-disk-size <size>         The disk size to use for the multipass vm.
-                                            Value: $MULTIPASS_VM_DISK_SIZE
+    --build-provider <provider>             The provider used to build the image.
+                                            This can be either multipass or aws.
+                                            Value: $BUILD_PROVIDER
 
-    --multipass-vm-mem-size <size>          The amount of ram to use for the multipass vm.
-                                            Value: $MULTIPASS_VM_MEM_SIZE
+    --no-cleanup                            Don't tear down the build provider
+                                            after the build completes.
+                                            Value: Cleanup? $SHOULD_CLEANUP
 
     --help                                  Print this help message.
 
@@ -164,30 +154,46 @@ do
       HOOK_EXTRAS_BRANCH="$2"
       shift
       ;;
-    --multipass-vm-disk-size)
-      MULTIPASS_VM_DISK_SIZE="$2"
+    --build-provider)
+      BUILD_PROVIDER="$2"
       shift
       ;;
-    --multipass-vm-mem-size)
-      MULTIPASS_VM_MEM_SIZE="$2"
-      shift
+    --no-cleanup)
+      SHOULD_CLEANUP=NO
       ;;
     --)
       shift
       break
       ;;
     --help)
-      print-usage
-      exit 255
+      SHOW_HELP=YES
       ;;
     *)
       echo "error: unknown option '$1'" >&2
-      print-usage
       exit 255
       ;;
   esac
   shift
 done
+
+if [ "$SHOW_HELP" = "YES" ]; then
+  print-usage
+  exit 255
+fi
+
+# Verify that the specified build provider is available and ready
+
+build_provider_config="$(dirname "$(readlink -f "$0")")/$BUILD_PROVIDER-provider"
+if [ ! -f "$build_provider_config" ]
+then
+  echo "error: invalid build provider specified: $BUILD_PROVIDER" >&2
+  print-usage
+  exit 255
+fi
+
+source "$build_provider_config"
+
+build-provider-assert-ready
 
 # The --series flag is required by ubuntu-old-fashioned for image builds,
 # so we check to make sure we have it before moving on:
@@ -201,7 +207,7 @@ fi
 
 ############ Where the Magic Happens ##########################################
 
-# Let's use multipass to build all the things!
+# Let's build all the things!
 
 temp_dir=$(mktemp --directory)
 bartender_name=$(petname)-ubuntu-bartender
@@ -210,14 +216,14 @@ drink_name=${bartender_name/-bartender/-on-the-rocks.tar.gz}
 function cleanup {
   echo "Cleaning up..."
   rm -rf $temp_dir
-  multipass delete -p $bartender_name
+  build-provider-destroy $bartender_name
 }
-trap cleanup EXIT
 
-multipass launch --disk $MULTIPASS_VM_DISK_SIZE \
-                 --mem $MULTIPASS_VM_MEM_SIZE \
-                 --name $bartender_name \
-                 daily:x
+if [ "$SHOULD_CLEANUP" = "YES" ]; then
+  trap cleanup EXIT
+fi
+
+build-provider-create $bartender_name
 
 (
   cd $temp_dir
@@ -245,16 +251,15 @@ cd livecd-rootfs
 sudo -E ../ubuntu-old-fashioned/old-fashioned-image-build --no-cleanup $series_flag $@
 EOF
 
-  tar czf ingredients.tar.gz *
-  multipass transfer ingredients.tar.gz $bartender_name:
+  tar czf ingredients.tar.gz ./*
+  build-provider-upload $bartender_name ingredients.tar.gz ingredients.tar.gz
+  build-provider-run $bartender_name -- tar xf ingredients.tar.gz
 )
 
-echo "Mixing drink. This may take a while..."
+echo "Mixing drink..."
 echo "(See progress in $bartender_name.log)"
-multipass exec $bartender_name -- tar xf ingredients.tar.gz
-multipass exec $bartender_name -- bash mix-old-fashioned &>$bartender_name.log </dev/null
-multipass exec $bartender_name -- tar czf drink.tar.gz build.output
+build-provider-run $bartender_name -- bash mix-old-fashioned &>$bartender_name.log </dev/null
 
 echo "Pouring $drink_name..."
-multipass transfer $bartender_name:drink.tar.gz $drink_name
-
+build-provider-run $bartender_name -- tar czf drink.tar.gz build.output
+build-provider-download $bartender_name drink.tar.gz $drink_name
