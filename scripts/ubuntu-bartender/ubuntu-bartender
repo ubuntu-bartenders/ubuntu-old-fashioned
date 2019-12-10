@@ -296,7 +296,7 @@ cd livecd-rootfs
 sudo -E ../ubuntu-old-fashioned/old-fashioned-image-build --no-cleanup $series_flag $@
 EOF
 
-  tar czf ingredients.tar.gz ./*
+  tar czf ingredients.tar.gz --exclude-vcs ./*
   build-provider-upload $bartender_name ingredients.tar.gz ingredients.tar.gz
   build-provider-run $bartender_name -- tar xf ingredients.tar.gz
 )
