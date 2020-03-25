@@ -98,8 +98,8 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --livecd-rootfs-branch <branch>         The branch of livecd-rootfs to use.
                                             Value: $LIVECD_ROOTFS_BRANCH
 
-    --livecd-rootfs-dir <branch>            A local directory containing livecd-rootfs.
-                                            Value: $LIVECD_ROOTFS_DIR
+    --livecd-rootfs-dir <dir>               A local directory containing livecd-rootfs.
+                                            Value: ${LIVECD_ROOTFS_DIR:-None}
 
     --ubuntu-old-fashioned-repo <url>       The url to the git repo hosting ubuntu-old-fashioned.
                                             Value: $UBUNTU_OLD_FASHIONED_REPO
@@ -113,7 +113,7 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --hook-extras-branch <branch>           The branch of the extras-repo to use.
                                             Value: ${HOOK_EXTRAS_BRANCH:-None}
 
-    --hook-extras-dir <url>                 A local directory containing extra hooks.
+    --hook-extras-dir <dir>                 A local directory containing extra hooks.
                                             Value: ${HOOK_EXTRAS_DIR:-None}
 
     --chroot-archive <archive>              A local archive used to perform the build.
