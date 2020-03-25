@@ -69,6 +69,12 @@ while :; do
             # been built
             USE_CHROOT_CACHE=true
             ;;
+        --use-chroot-archive)
+            # pass this flag to specify a chroot to use instead of the cache
+            USE_CHROOT_CACHE=true
+            CHROOT_ARCHIVE="$2"
+            shift
+            ;;
         --no-cleanup)
             # pass this flag to keep the lxd build environment after build has
             # finished or failed
@@ -145,7 +151,7 @@ set -xe
 OLD_FASHIONED_BUILD_CACHE="/tmp/old-fashioned-builder"
 UAT_CHECKOUT="$OLD_FASHIONED_BUILD_CACHE/uat"
 CHROOT_ARCHIVE_NAME="chroot-ubuntu-$SERIES-${ARCH}.tar.bz"
-CHROOT_ARCHIVE="$OLD_FASHIONED_BUILD_CACHE/$CHROOT_ARCHIVE_NAME"
+CHROOT_ARCHIVE="${CHROOT_ARCHIVE:-$OLD_FASHIONED_BUILD_CACHE/$CHROOT_ARCHIVE_NAME}"
 OUTPUT_DIRECTORY=~/build.output
 LIVEFS_NAME="LOCAL_IMAGES_BUILD"
 SERIAL="$(date +%Y%m%d.%H%M)"
@@ -184,7 +190,7 @@ if [ x"$SQUID_ADDRESS" != 'x' ] ; then
     cat > /tmp/30squid-proxy << EOF
 Acquire::http::Proxy "$SQUID_ADDRESS";
 EOF
-	lxc file push $SQUID_TMP_CONFIG lp-$SERIES-${ARCH}/etc/apt/apt.conf.d/30squid-proxy
+    lxc file push $SQUID_TMP_CONFIG lp-$SERIES-${ARCH}/etc/apt/apt.conf.d/30squid-proxy
 fi
 
 # Use the same apt mirror as the host
