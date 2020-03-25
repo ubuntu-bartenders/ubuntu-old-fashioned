@@ -45,7 +45,6 @@ do
   if ! command -v $dependency &>/dev/null
   then
     echo "error: $dependency was not found in PATH" >&2
-    print-usage
     exit 255
   fi
 done
