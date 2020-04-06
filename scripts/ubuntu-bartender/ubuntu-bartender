@@ -200,7 +200,7 @@ validate_old_fashioned_flags() {
 			 xargs -0I {} grep -o "${__flag_regex})" {} |
 			 tr -d ')'))
 
-	for flag in $(echo ${@} | grep -o "${__flag_regex}"); do
+	for flag in $(echo "${@}" | grep -o "${__flag_regex}"); do
 		if [[ ! "${valid_old_fashioned_flags[*]}" = *"${flag}"* ]]; then
 			echo -e "\nerror: unknown ubuntu-old-fashioned option '${flag}'\n" >&2
 			exit 255
