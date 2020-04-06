@@ -113,6 +113,23 @@ assert_dependencies_installed() {
 	done
 }
 
+load_build_provider_configuration() {
+	local build_provider_config="${__bartender_cmd_dir}/${BUILD_PROVIDER}-provider"
+	if [[ -f "${build_provider_config}" ]]; then
+		# Ignore shellcheck warnings when trying to scan this file
+		# shellcheck source=/dev/null
+		source "${build_provider_config}"
+	else
+		echo -e "\nerror: invalid build provider specified: ${BUILD_PROVIDER}\n" >&2
+		print_usage
+		exit 255
+	fi
+}
+
+assert_dependencies_installed
+
+apply_default_bartender_configuration
+
 # Pull valid flags out of usage help text
 valid_flags=($(print_usage 2>&1 | grep -o "${__flag_regex}"))
 
@@ -155,19 +172,7 @@ then
 	exit 255
 fi
 
-assert_dependencies_installed
-
-apply_default_bartender_configuration
-
-build_provider_config="$(dirname "$(readlink -f "$0")")/$BUILD_PROVIDER-provider"
-if [ ! -f "$build_provider_config" ]
-then
-	echo "error: invalid build provider specified: $BUILD_PROVIDER" >&2
-	print_usage
-	exit 255
-fi
-
-source "$build_provider_config"
+load_build_provider_configuration
 
 build-provider-assert-ready
 
