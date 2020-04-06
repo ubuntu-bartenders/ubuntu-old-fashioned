@@ -126,6 +126,68 @@ load_build_provider_configuration() {
 	fi
 }
 
+prepare_livecd_rootfs() {
+	local staging_dir="${1}"
+
+	if [[ -n "${LIVECD_ROOTFS_DIR}" ]]; then
+		cp -aR "${LIVECD_ROOTFS_DIR}" "${staging_dir}/livecd-rootfs"
+	else
+		git clone -qb "${LIVECD_ROOTFS_BRANCH}" "${LIVECD_ROOTFS_REPO}" "${staging_dir}/livecd-rootfs"
+	fi
+}
+
+prepare_ubuntu_old_fashioned() {
+	local staging_dir="${1}"
+
+	if [[ -n "${UBUNTU_OLD_FASHIONED_DIR}" ]]; then
+		cp -aR "${UBUNTU_OLD_FASHIONED_DIR}" "${staging_dir}/ubuntu-old-fashioned"
+	else
+		git clone -qb "${UBUNTU_OLD_FASHIONED_BRANCH}" "${UBUNTU_OLD_FASHIONED_REPO}" "${staging_dir}/ubuntu-old-fashioned"
+	fi
+}
+
+prepare_extra_hooks() {
+	local staging_dir="${1}"
+
+	if [[ -n "${HOOK_EXTRAS_DIR}" ]]; then
+		cp -aR "${HOOK_EXTRAS_DIR}" "${staging_dir}/extras"
+	elif [[ -n "${HOOK_EXTRAS_REPO}" ]]; then
+		if [[ -n "${HOOK_EXTRAS_BRANCH}" ]]; then
+			local branch_flags=(-b "${HOOK_EXTRAS_BRANCH}")
+		fi
+		git clone -q "${branch_flags[@]}" "${HOOK_EXTRAS_REPO}" "${staging_dir}/extras"
+	fi
+
+	if [[ -d "${staging_dir}/extras" ]]; then
+		find "${staging_dir}/livecd-rootfs/live-build/" -type d -name '*hooks*' -print0 |
+			xargs -0I {} cp -af "${staging_dir}/extras/"* {}
+	fi
+}
+
+prepare_chroot_archive() {
+	local staging_dir="${1}"
+
+	if [[ -n "${CHROOT_ARCHIVE}" ]]; then
+		cp -aR "${CHROOT_ARCHIVE}" "${staging_dir}/chroot-archive"
+		# Set ubuntu-old-fashioned flag to use the chroot-archive
+		chroot_archive_flag=(--use-chroot-archive ../chroot-archive)
+	fi
+}
+
+prepare_ingredients() {
+	local staging_dir="${1}"
+
+	prepare_ubuntu_old_fashioned "${staging_dir}"
+	prepare_livecd_rootfs "${staging_dir}"
+	prepare_extra_hooks "${staging_dir}"
+	prepare_chroot_archive "${staging_dir}"
+
+	(
+		cd "${staging_dir}"
+		tar czf ingredients.tar.gz --exclude-vcs ./*
+	)
+}
+
 assert_dependencies_installed
 
 apply_default_bartender_configuration
@@ -202,55 +264,12 @@ build-provider-create $bartender_name
 
 (
 	echo "Preparing ingredients..."
-
-	if [ -n "$HOOK_EXTRAS_DIR" ]
-	then
-		cp -aR "$HOOK_EXTRAS_DIR" $temp_dir/extras
-	fi
-
-	if [ -n "$LIVECD_ROOTFS_DIR" ]
-	then
-		cp -aR "$LIVECD_ROOTFS_DIR" $temp_dir/livecd-rootfs
-	fi
-
-	if [ -n "$UBUNTU_OLD_FASHIONED_DIR" ]
-	then
-		cp -aR "$UBUNTU_OLD_FASHIONED_DIR" $temp_dir/ubuntu-old-fashioned
-	fi
-
-	if [ -n "$CHROOT_ARCHIVE" ]
-	then
-		cp -aR "$CHROOT_ARCHIVE" $temp_dir/chroot-archive
-		chroot_archive_flag="--use-chroot-archive ../chroot-archive"
-	fi
+	prepare_ingredients "${temp_dir}"
 
 	cd $temp_dir
 
-	if [ -z "$UBUNTU_OLD_FASHIONED_DIR" ]
-	then
-		git clone -qb $UBUNTU_OLD_FASHIONED_BRANCH $UBUNTU_OLD_FASHIONED_REPO
-	fi
-
-	if [ -z "$LIVECD_ROOTFS_DIR" ]
-	then
-		git clone -qb $LIVECD_ROOTFS_BRANCH $LIVECD_ROOTFS_REPO
-	fi
-
-	if [ -n "$HOOK_EXTRAS_REPO" ]
-	then
-		branch_flag=" "
-		if [ -n "$HOOK_EXTRAS_BRANCH" ]
-		then
-			branch_flag="-b $HOOK_EXTRAS_BRANCH"
-		fi
-		git clone -q $branch_flag $HOOK_EXTRAS_REPO extras
-	fi
-
-	if [ -d $temp_dir/extras ]
-	then
-		find livecd-rootfs/live-build/ -type d -name '*hooks*' |
-			xargs -I {} cp -af extras/* {}
-	fi
+	build-provider-upload $bartender_name ingredients.tar.gz ingredients.tar.gz
+	build-provider-run $bartender_name -- tar xf ingredients.tar.gz
 
 	cat > mix-old-fashioned <<- EOF
 		#!/bin/bash -x
@@ -260,10 +279,7 @@ build-provider-create $bartender_name
 		cd livecd-rootfs
 		sudo -E ../ubuntu-old-fashioned/old-fashioned-image-build --no-cleanup $chroot_archive_flag $series_flag $@
 	EOF
-
-	tar czf ingredients.tar.gz --exclude-vcs ./*
-	build-provider-upload $bartender_name ingredients.tar.gz ingredients.tar.gz
-	build-provider-run $bartender_name -- tar xf ingredients.tar.gz
+	build-provider-upload $bartender_name mix-old-fashioned mix-old-fashioned
 )
 
 echo "Mixing drink..."
