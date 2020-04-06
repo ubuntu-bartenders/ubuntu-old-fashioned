@@ -188,6 +188,27 @@ prepare_ingredients() {
 	)
 }
 
+validate_old_fashioned_flags() {
+	local staging_dir="${1}"
+
+	# remaining arguments are flags for ubuntu-old-fashioned
+	shift
+
+	local valid_old_fashioned_flags
+	valid_old_fashioned_flags=(
+		$(find "${staging_dir}" -name 'old-fashioned-image-build' -print0 |
+			 xargs -0I {} grep -o "${__flag_regex})" {} |
+			 tr -d ')'))
+
+	for flag in $(echo ${@} | grep -o "${__flag_regex}"); do
+		if [[ ! "${valid_old_fashioned_flags[*]}" = *"${flag}"* ]]; then
+			echo -e "\nerror: unknown ubuntu-old-fashioned option '${flag}'\n" >&2
+			exit 255
+		fi
+		shift
+	done
+}
+
 build_images() {
 	local temp_dir
 	local bartender_name
@@ -213,6 +234,7 @@ build_images() {
 
 	echo "Preparing ingredients..."
 	prepare_ingredients "${temp_dir}"
+	validate_old_fashioned_flags "${temp_dir}" "${@}"
 	build-provider-upload "${bartender_name}" "${temp_dir}/ingredients.tar.gz" "ingredients.tar.gz"
 	build-provider-run "${bartender_name}" -- tar xf "ingredients.tar.gz"
 
