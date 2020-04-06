@@ -259,6 +259,11 @@ build_images() {
 			--no-cleanup \
 			${@}
 	EOF
+
+	if [[ -n "${TRACE}" ]]; then
+		cat "${temp_dir}/mix-old-fashioned" >&2
+	fi
+
 	build-provider-upload "${bartender_name}" "${temp_dir}/mix-old-fashioned" "mix-old-fashioned"
 	build-provider-run "${bartender_name}" -- bash mix-old-fashioned &>"${bartender_name}.log" </dev/null
 
