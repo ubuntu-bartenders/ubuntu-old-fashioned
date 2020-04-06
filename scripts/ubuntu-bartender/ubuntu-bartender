@@ -39,49 +39,74 @@ else
 	LIVECD_ROOTFS_BRANCH=${LIVECD_ROOTFS_BRANCH:-ubuntu/master}
 fi
 
-function print-usage {
+print_usage() {
 	cat << EOF >&2
-usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
+usage: ${0} [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
 
-		--livecd-rootfs-repo <url>							The url to the git repo hosting livecd-rootfs.
-																						Value: $LIVECD_ROOTFS_REPO
+	--livecd-rootfs-repo <url>
 
-		--livecd-rootfs-branch <branch>				 The branch of livecd-rootfs to use.
-																						Value: $LIVECD_ROOTFS_BRANCH
+		The url to the git repo hosting livecd-rootfs.
+		Value: ${LIVECD_ROOTFS_REPO}
 
-		--livecd-rootfs-dir <dir>							 A local directory containing livecd-rootfs.
-																						Value: ${LIVECD_ROOTFS_DIR:-None}
+	--livecd-rootfs-branch <branch>
 
-		--ubuntu-old-fashioned-repo <url>			 The url to the git repo hosting ubuntu-old-fashioned.
-																						Value: $UBUNTU_OLD_FASHIONED_REPO
+		The branch of livecd-rootfs to use.
+		Value: ${LIVECD_ROOTFS_BRANCH}
 
-		--ubuntu-old-fashioned-branch <branch>	The branch of ubuntu-old-fashioned to use.
-																						Value: $UBUNTU_OLD_FASHIONED_BRANCH
+	--livecd-rootfs-dir <dir>
 
-		--ubuntu-old-fashioned-dir <dir>				A local directory containing ubuntu-old-fashioned.
-																						Value: ${UBUNTU_OLD_FASHIONED_DIR:-None}
+		A local directory containing livecd-rootfs.
+		Value: ${LIVECD_ROOTFS_DIR:-None}
 
-		--hook-extras-repo <url>								The url to a git repo hosting extra hooks.
-																						Value: ${HOOK_EXTRAS_REPO:-None}
+	--ubuntu-old-fashioned-repo <url>
 
-		--hook-extras-branch <branch>					 The branch of the extras-repo to use.
-																						Value: ${HOOK_EXTRAS_BRANCH:-None}
+		The url to the git repo hosting ubuntu-old-fashioned.
+		Value: ${UBUNTU_OLD_FASHIONED_REPO}
 
-		--hook-extras-dir <dir>								 A local directory containing extra hooks.
-																						Value: ${HOOK_EXTRAS_DIR:-None}
+	--ubuntu-old-fashioned-branch <branch>
 
-		--chroot-archive <archive>							A local archive used to perform the build.
-																						Value: ${CHROOT_ARCHIVE:-None}
+		The branch of ubuntu-old-fashioned to use.
+		Value: ${UBUNTU_OLD_FASHIONED_BRANCH}
 
-		--build-provider <provider>						 The provider used to build the image.
-																						This can be either multipass or aws.
-																						Value: $BUILD_PROVIDER
+	--ubuntu-old-fashioned-dir <dir>
 
-		--no-cleanup														Don't tear down the build provider
-																						after the build completes.
-																						Value: Cleanup? $SHOULD_CLEANUP
+		A local directory containing ubuntu-old-fashioned.
+		Value: ${UBUNTU_OLD_FASHIONED_DIR:-None}
 
-		--help																	Print this help message.
+	--hook-extras-repo <url>
+
+		The url to a git repo hosting extra hooks.
+		Value: ${HOOK_EXTRAS_REPO:-None}
+
+	--hook-extras-branch <branch>
+
+		The branch of the extras-repo to use.
+		Value: ${HOOK_EXTRAS_BRANCH:-None}
+
+	--hook-extras-dir <dir>
+
+		A local directory containing extra hooks.
+		Value: ${HOOK_EXTRAS_DIR:-None}
+
+	--chroot-archive <archive>
+
+		A local archive used to perform the build.
+		Value: ${CHROOT_ARCHIVE:-None}
+
+	--build-provider <provider>
+
+		The provider used to build the image.
+		This can be either multipass or aws.
+		Value: ${BUILD_PROVIDER}
+
+	--no-cleanup
+
+		Don't tear down the build provider after the build completes.
+		Value: Cleanup? ${SHOULD_CLEANUP}
+
+	--help
+
+		Print this help message.
 
 Options specified after '--' separator are used by Ubuntu Old Fashioned directly.
 
@@ -156,13 +181,13 @@ done
 if [ -n "$HOOK_EXTRAS_REPO" ] && [ -n "$HOOK_EXTRAS_DIR" ]
 then
 	echo "error: cannot specify both --hook-extras-repo and --hook-extras-dir" >&2
-	print-usage
+	print_usage
 	exit 255
 fi
 
 if [ "$SHOW_HELP" = "YES" ]
 then
-	print-usage
+	print_usage
 	exit 255
 fi
 
@@ -170,7 +195,7 @@ build_provider_config="$(dirname "$(readlink -f "$0")")/$BUILD_PROVIDER-provider
 if [ ! -f "$build_provider_config" ]
 then
 	echo "error: invalid build provider specified: $BUILD_PROVIDER" >&2
-	print-usage
+	print_usage
 	exit 255
 fi
 
@@ -181,7 +206,7 @@ build-provider-assert-ready
 if [ -z "$series_flag" ] && ! echo -- $@ | grep -q -- --series
 then
 	echo "error: the '--series' option is required by ubuntu-old-fashioned" >&2
-	print-usage
+	print_usage
 	exit 255
 fi
 
