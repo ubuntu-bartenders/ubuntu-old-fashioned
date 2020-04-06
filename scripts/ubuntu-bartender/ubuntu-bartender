@@ -6,29 +6,10 @@ if [[ -n "${TRACE}" ]]; then
 	set -xv
 fi
 
+__bartender_cmd_name="$(basename "${0}")"
+__bartender_cmd_dir="$(dirname "$(readlink -f "${0}")")"
+
 __flag_regex='\--[a-z-]\{1,\}'
-
-UBUNTU_OLD_FASHIONED_REPO=${UBUNTU_OLD_FASHIONED_REPO:-https://github.com/chrisglass/ubuntu-old-fashioned.git}
-LIVECD_ROOTFS_REPO=${LIVECD_ROOTFS_REPO:-https://git.launchpad.net/livecd-rootfs}
-HOOK_EXTRAS_REPO=${HOOK_EXTRAS_REPO:-}
-HOOK_EXTRAS_DIR=${HOOK_EXTRAS_DIR:-}
-
-UBUNTU_OLD_FASHIONED_BRANCH=${UBUNTU_OLD_FASHIONED_BRANCH:-master}
-HOOK_EXTRAS_BRANCH=${HOOK_EXTRAS_BRANCH:-}
-
-BUILD_PROVIDER=${BUILD_PROVIDER:-multipass}
-
-SHOULD_CLEANUP=${SHOULD_CLEANUP:-YES}
-
-maybe_series=$(basename $0 | cut -d'-' -f2)
-if [ "$maybe_series" != "bartender" ]
-then
-	series_flag="--series $maybe_series"
-	LIVECD_ROOTFS_BRANCH=${LIVECD_ROOTFS_BRANCH:-ubuntu/$maybe_series}
-else
-	series_flag=""
-	LIVECD_ROOTFS_BRANCH=${LIVECD_ROOTFS_BRANCH:-ubuntu/master}
-fi
 
 print_usage() {
 	cat << EOF >&2
@@ -104,6 +85,24 @@ Options specified after '--' separator are used by Ubuntu Old Fashioned directly
 EOF
 }
 
+apply_default_bartender_configuration() {
+	BUILD_PROVIDER=${BUILD_PROVIDER:-multipass}
+	SHOULD_CLEANUP=${SHOULD_CLEANUP:-YES}
+	LIVECD_ROOTFS_REPO=${LIVECD_ROOTFS_REPO:-https://git.launchpad.net/livecd-rootfs}
+	UBUNTU_OLD_FASHIONED_REPO=${UBUNTU_OLD_FASHIONED_REPO:-https://github.com/chrisglass/ubuntu-old-fashioned.git}
+	UBUNTU_OLD_FASHIONED_BRANCH=${UBUNTU_OLD_FASHIONED_BRANCH:-master}
+
+	# Infer series configuration from script name
+	local maybe_series
+	maybe_series=$(echo "${__bartender_cmd_name}" | cut -d'-' -f2)
+	if [[ "${maybe_series}" != "bartender" ]]; then
+		LIVECD_ROOTFS_BRANCH=${LIVECD_ROOTFS_BRANCH:-ubuntu/${maybe_series}}
+		series_flag=(--series ${maybe_series})
+	else
+		LIVECD_ROOTFS_BRANCH=${LIVECD_ROOTFS_BRANCH:-ubuntu/master}
+	fi
+}
+
 assert_dependencies_installed() {
 	local dependencies=(petname git)
 	for dependency in "${dependencies[@]}"; do
@@ -157,6 +156,8 @@ then
 fi
 
 assert_dependencies_installed
+
+apply_default_bartender_configuration
 
 build_provider_config="$(dirname "$(readlink -f "$0")")/$BUILD_PROVIDER-provider"
 if [ ! -f "$build_provider_config" ]
