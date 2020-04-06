@@ -45,7 +45,6 @@ do
   if ! command -v $dependency &>/dev/null
   then
     echo "error: $dependency was not found in PATH" >&2
-    print-usage
     exit 255
   fi
 done
@@ -99,8 +98,8 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --livecd-rootfs-branch <branch>         The branch of livecd-rootfs to use.
                                             Value: $LIVECD_ROOTFS_BRANCH
 
-    --livecd-rootfs-dir <branch>            A local directory containing livecd-rootfs.
-                                            Value: $LIVECD_ROOTFS_DIR
+    --livecd-rootfs-dir <dir>               A local directory containing livecd-rootfs.
+                                            Value: ${LIVECD_ROOTFS_DIR:-None}
 
     --ubuntu-old-fashioned-repo <url>       The url to the git repo hosting ubuntu-old-fashioned.
                                             Value: $UBUNTU_OLD_FASHIONED_REPO
@@ -108,13 +107,16 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --ubuntu-old-fashioned-branch <branch>  The branch of ubuntu-old-fashioned to use.
                                             Value: $UBUNTU_OLD_FASHIONED_BRANCH
 
+    --ubuntu-old-fashioned-dir <dir>        A local directory containing ubuntu-old-fashioned.
+                                            Value: ${UBUNTU_OLD_FASHIONED_DIR:-None}
+
     --hook-extras-repo <url>                The url to a git repo hosting extra hooks.
                                             Value: ${HOOK_EXTRAS_REPO:-None}
 
     --hook-extras-branch <branch>           The branch of the extras-repo to use.
                                             Value: ${HOOK_EXTRAS_BRANCH:-None}
 
-    --hook-extras-dir <url>                 A local directory containing extra hooks.
+    --hook-extras-dir <dir>                 A local directory containing extra hooks.
                                             Value: ${HOOK_EXTRAS_DIR:-None}
 
     --chroot-archive <archive>              A local archive used to perform the build.
@@ -158,6 +160,10 @@ do
       ;;
     --ubuntu-old-fashioned-branch)
       UBUNTU_OLD_FASHIONED_BRANCH="$2"
+      shift
+      ;;
+    --ubuntu-old-fashioned-dir)
+      UBUNTU_OLD_FASHIONED_DIR="$2"
       shift
       ;;
     --hook-extras-repo)
@@ -269,6 +275,11 @@ build-provider-create $bartender_name
     cp -aR "$LIVECD_ROOTFS_DIR" $temp_dir/livecd-rootfs
   fi
 
+  if [ -n "$UBUNTU_OLD_FASHIONED_DIR" ]
+  then
+    cp -aR "$UBUNTU_OLD_FASHIONED_DIR" $temp_dir/ubuntu-old-fashioned
+  fi
+
   if [ -n "$CHROOT_ARCHIVE" ]
   then
     cp -aR "$CHROOT_ARCHIVE" $temp_dir/chroot-archive
@@ -277,7 +288,10 @@ build-provider-create $bartender_name
 
   cd $temp_dir
 
-  git clone -qb $UBUNTU_OLD_FASHIONED_BRANCH $UBUNTU_OLD_FASHIONED_REPO
+  if [ -z "$UBUNTU_OLD_FASHIONED_DIR" ]
+  then
+    git clone -qb $UBUNTU_OLD_FASHIONED_BRANCH $UBUNTU_OLD_FASHIONED_REPO
+  fi
 
   if [ -z "$LIVECD_ROOTFS_DIR" ]
   then
