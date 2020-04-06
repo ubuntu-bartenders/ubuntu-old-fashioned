@@ -6,6 +6,8 @@ if [[ -n "${TRACE}" ]]; then
 	set -xv
 fi
 
+__flag_regex='\--[a-z-]\{1,\}'
+
 dependencies="petname git"
 
 for dependency in $dependencies
@@ -113,77 +115,41 @@ Options specified after '--' separator are used by Ubuntu Old Fashioned directly
 EOF
 }
 
-while [[ $# -gt 0 ]]
-do
-	case $1 in
-		--livecd-rootfs-repo)
-			LIVECD_ROOTFS_REPO="$2"
-			shift
-			;;
-		--livecd-rootfs-branch)
-			LIVECD_ROOTFS_BRANCH="$2"
-			shift
-			;;
-		--livecd-rootfs-dir)
-			LIVECD_ROOTFS_DIR="$2"
-			shift
-			;;
-		--ubuntu-old-fashioned-repo)
-			UBUNTU_OLD_FASHIONED_REPO="$2"
-			shift
-			;;
-		--ubuntu-old-fashioned-branch)
-			UBUNTU_OLD_FASHIONED_BRANCH="$2"
-			shift
-			;;
-		--ubuntu-old-fashioned-dir)
-			UBUNTU_OLD_FASHIONED_DIR="$2"
-			shift
-			;;
-		--hook-extras-repo)
-			HOOK_EXTRAS_REPO="$2"
-			shift
-			;;
-		--hook-extras-branch)
-			HOOK_EXTRAS_BRANCH="$2"
-			shift
-			;;
-		--hook-extras-dir)
-			HOOK_EXTRAS_DIR="$2"
-			shift
-			;;
-		--chroot-archive)
-			CHROOT_ARCHIVE="$2"
-			shift
-			;;
-		--build-provider)
-			BUILD_PROVIDER="$2"
-			shift
-			;;
-		--no-cleanup)
-			SHOULD_CLEANUP=NO
-			;;
-		--)
-			shift
-			break
-			;;
-		--help)
-			SHOW_HELP=YES
-			;;
-		*)
-			echo "error: unknown option '$1'" >&2
-			exit 255
-			;;
-	esac
-	shift
-done
+# Pull valid flags out of usage help text
+valid_flags=($(print_usage 2>&1 | grep -o "${__flag_regex}"))
 
-if [ -n "$HOOK_EXTRAS_REPO" ] && [ -n "$HOOK_EXTRAS_DIR" ]
-then
-	echo "error: cannot specify both --hook-extras-repo and --hook-extras-dir" >&2
-	print_usage
-	exit 255
-fi
+# Parse command line flags
+while [[ $# -gt 0 ]]; do
+	case ${1} in
+	--help)
+		SHOW_HELP=YES
+		shift
+		;;
+	--no-cleanup)
+		SHOULD_CLEANUP=NO
+		shift
+		;;
+	--)
+		shift
+		break
+		;;
+	--*)
+		if [[ "${valid_flags[*]}" = *"${1}"* ]]; then
+			VAR=$(echo "${1}" | cut -d- -f3- | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+			declare "${VAR}"="${2}"
+			shift
+			shift
+			continue
+		fi
+		# If the flag is invalid, drop-through to error handling
+		;&
+	*)
+		echo -e "\nerror: unknown option '${1}'\n" >&2
+		print_usage
+		exit 255
+		;;
+	esac
+done
 
 if [ "$SHOW_HELP" = "YES" ]
 then
