@@ -1,0 +1,109 @@
+# Ubuntu Bartender
+
+Sometimes you just want an [Ubuntu Old Fashioned][1], but you don't want to
+make it yourself.
+
+Sometimes you just want someone else to gather the ingredients, make the
+drink for you, and clean up afterwards.
+
+So sit back, relax, and let the Ubuntu Bartender do the work for you.
+
+## Really, what is this?
+
+This script will collect all the required bits Ubuntu Old Fashioned
+needs to build Ubuntu images, build those images for you, then clean up
+afterwards.
+
+## What is an Ubuntu Old Fashioned build?
+
+It builds Ubuntu images. Like what you'd find [here][2]
+
+See: [Ubuntu Old Fashioned][1]
+
+## I'm still confused, can go into more detail?
+
+Absolutely. Here's an incomplete, high-level overview of the components
+of an Ubuntu image build with Ubuntu Bartender:
+
+#### [Ubuntu Bartender][3]
+- Manages the lifecycle of a xenial VM in which the image build is run
+- Collects the dependencies of an Ubuntu Old Fashioned image build
+- Runs an Ubuntu Old Fashioned image build
+- Downloads any artifacts produced by the build
+
+#### [Ubuntu Old Fashioned][1]
+- Manages the lifecycle of an LXD container in which the image build is run
+- Runs launchpad-buildd's build livefs command to create Ubuntu images
+- Pulls any artifacts produced by the build out of the LXD container
+
+#### [launchpad-build][4]
+- Runs live-build to create Ubuntu images
+
+#### [live-build][5]
+- Runs hooks in livecd-rootfs to create Ubuntu images
+
+#### [livecd-rootfs][6]
+- Contains configuration and hooks that are used to create Ubuntu images
+
+## Great, but how do I use this?
+
+Just give it a run, like so:
+
+```
+ubuntu-bartender -- --series focal
+```
+
+## What's with those options?
+
+With Ubuntu Bartender, you can configure all of the components of the build.
+
+Where do you want the VM to run? You can specify:
+
+```
+ubuntu-bartender --build-provider aws # build on a remote AWS instance
+ubuntu-bartender --build-provider multipass # build with a local multipass instance
+```
+
+Where should the livecd-rootfs hooks come from? Or the rootfs for Ubuntu Old Fashioned's LXD container? You can specify that, too:
+
+```
+ubuntu-bartender --livecd-rootfs-dir ~/local_livecd-rootfs # Use a local checkout of livecd-rootfs
+ubuntu-bartender --chroot-archive local_rootfs.tar.gz # Use a different rootfs for the LXD container
+```
+
+## That's too many options, how can I keep track of them all?
+
+Use `--help` to list all available options for Ubuntu Bartender. The help text will update to include any configuration already specified.
+
+## You never explained the strange `--` in the first example. What is that?
+
+When passing flags to Ubuntu Bartender, any flag specified after a `--` will be passed directly to Ubuntu Old Fashioned. So you can specify something like:
+
+```
+ubuntu-bartender -- \
+  --series focal # Set the series to 20.04 LTS
+  --project ubuntu-cpc # Build cloud images (CPC = Canonical Public Cloud)
+```
+
+__IMPORTANT NOTE:__ You _must_ always specify a series for Ubuntu Old Fashioned. Don't worry, the script will remind you to set this if you forget.
+
+## I don't want to specify a series for Ubuntu Old Fashioned
+
+You're in luck! There are a handful of helper scripts that set all of the relevant flags for you for a specified series. For example, compare the output of the following:
+
+```
+ubuntu-xenial-bartender --help
+ubuntu-bionic-bartender --help
+ubuntu-bartender --help
+```
+
+## More questions?
+
+Feel free to open an issue and we can add more to the README.
+
+[1]: https://github.com/chrisglass/ubuntu-old-fashioned
+[2]: https://cloud-images.ubuntu.com
+[3]: https://github.com/chrisglass/ubuntu-old-fashioned/tree/master/scripts/ubuntu-bartender
+[4]: https://launchpad.net/launchpad-buildd
+[5]: https://manpages.debian.org/testing/live-build/live-build.7.en.html
+[6]: https://launchpad.net/livecd-rootfs
