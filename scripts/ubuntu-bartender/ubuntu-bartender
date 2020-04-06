@@ -1,44 +1,6 @@
 #!/bin/bash -e
 
-############ The Ubuntu Bartender #############################################
-
-# Sometimes you just want an Ubuntu Old Fashioned [1], but you don't want to
-# make it yourself.
-
-# Sometimes you just want someone else to gather the ingredients, make the
-# drink for you, and clean up afterwards.
-
-# So sit back, relax, and let the Ubuntu Bartender do the work for you.
-
-# 1: https://github.com/chrisglass/ubuntu-old-fashioned
-
-############ Overview #########################################################
-
-# This script will collect all the required bits Ubuntu Old Fashioned
-# needs to build Ubuntu images, build those images for you, then clean up
-# afterwards.
-
-# A simple bionic build can be accomplished with the incantation:
-
-# ./ubuntu-bartender --livecd-rootfs-branch ubuntu/bionic -- --series bionic
-
-# Arguments specified after the -- are used by Ubuntu Old Fashioned directly.
-
-# The Ubuntu Bartender can also be invoked with series specific helper script
-# that can save you from needing to manually specify the correct livecd_rootfs
-# branch and series.
-
-# For example, this is identical to the invocation above:
-
-# ./ubuntu-bionic-bartender
-
-############ Dependencies #####################################################
-
-# The Ubuntu Bartender requires the following executables to be in the PATH:
-
 dependencies="petname git"
-
-# Which we verify before moving on:
 
 for dependency in $dependencies
 do
@@ -49,32 +11,17 @@ do
   fi
 done
 
-############ Configuration ####################################################
-
-# The Ubuntu Bartender needs to know the location of a few git repositories:
-
 UBUNTU_OLD_FASHIONED_REPO=${UBUNTU_OLD_FASHIONED_REPO:-https://github.com/chrisglass/ubuntu-old-fashioned.git}
 LIVECD_ROOTFS_REPO=${LIVECD_ROOTFS_REPO:-https://git.launchpad.net/livecd-rootfs}
 HOOK_EXTRAS_REPO=${HOOK_EXTRAS_REPO:-}
 HOOK_EXTRAS_DIR=${HOOK_EXTRAS_DIR:-}
 
-# And any specific branches for each that should be used:
-
 UBUNTU_OLD_FASHIONED_BRANCH=${UBUNTU_OLD_FASHIONED_BRANCH:-master}
-# LIVECD_ROOTFS_BRANCH is inferred below from the script name
 HOOK_EXTRAS_BRANCH=${HOOK_EXTRAS_BRANCH:-}
-
-# The Ubuntu Bartender utilizes a build-provider to create Ubuntu Images.
-# We use multipass by default:
 
 BUILD_PROVIDER=${BUILD_PROVIDER:-multipass}
 
-# Should we tear down the build provider and clean up after ourselves
-# when the build is completed?
-
 SHOULD_CLEANUP=${SHOULD_CLEANUP:-YES}
-
-# Parse the name of the script to see if we can infer some variables
 
 maybe_series=$(basename $0 | cut -d'-' -f2)
 if [ "$maybe_series" != "bartender" ]
@@ -85,8 +32,6 @@ else
   series_flag=""
   LIVECD_ROOTFS_BRANCH=${LIVECD_ROOTFS_BRANCH:-ubuntu/master}
 fi
-
-# We also pull in explicitly set variables on the command line
 
 function print-usage {
   cat << EOF >&2
@@ -136,8 +81,6 @@ Options specified after '--' separator are used by Ubuntu Old Fashioned directly
 
 EOF
 }
-
-# Which we parse with the typical boilerplate:
 
 while [[ $# -gt 0 ]]
 do
@@ -217,8 +160,6 @@ then
   exit 255
 fi
 
-# Verify that the specified build provider is available and ready
-
 build_provider_config="$(dirname "$(readlink -f "$0")")/$BUILD_PROVIDER-provider"
 if [ ! -f "$build_provider_config" ]
 then
@@ -231,19 +172,12 @@ source "$build_provider_config"
 
 build-provider-assert-ready
 
-# The --series flag is required by ubuntu-old-fashioned for image builds,
-# so we check to make sure we have it before moving on:
-
 if [ -z "$series_flag" ] && ! echo -- $@ | grep -q -- --series
 then
   echo "error: the '--series' option is required by ubuntu-old-fashioned" >&2
   print-usage
   exit 255
 fi
-
-############ Where the Magic Happens ##########################################
-
-# Let's build all the things!
 
 temp_dir=$(mktemp --directory)
 bartender_name=$(petname)-ubuntu-bartender
