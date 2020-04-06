@@ -8,17 +8,6 @@ fi
 
 __flag_regex='\--[a-z-]\{1,\}'
 
-dependencies="petname git"
-
-for dependency in $dependencies
-do
-	if ! command -v $dependency &>/dev/null
-	then
-		echo "error: $dependency was not found in PATH" >&2
-		exit 255
-	fi
-done
-
 UBUNTU_OLD_FASHIONED_REPO=${UBUNTU_OLD_FASHIONED_REPO:-https://github.com/chrisglass/ubuntu-old-fashioned.git}
 LIVECD_ROOTFS_REPO=${LIVECD_ROOTFS_REPO:-https://git.launchpad.net/livecd-rootfs}
 HOOK_EXTRAS_REPO=${HOOK_EXTRAS_REPO:-}
@@ -115,6 +104,16 @@ Options specified after '--' separator are used by Ubuntu Old Fashioned directly
 EOF
 }
 
+assert_dependencies_installed() {
+	local dependencies=(petname git)
+	for dependency in "${dependencies[@]}"; do
+		if ! command -v "${dependency}" &>/dev/null; then
+			echo -e "\nerror: ${dependency} was not found in PATH\n" >&2
+			exit 255
+		fi
+	done
+}
+
 # Pull valid flags out of usage help text
 valid_flags=($(print_usage 2>&1 | grep -o "${__flag_regex}"))
 
@@ -156,6 +155,8 @@ then
 	print_usage
 	exit 255
 fi
+
+assert_dependencies_installed
 
 build_provider_config="$(dirname "$(readlink -f "$0")")/$BUILD_PROVIDER-provider"
 if [ ! -f "$build_provider_config" ]
