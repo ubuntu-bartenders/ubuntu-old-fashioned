@@ -96,6 +96,7 @@ fi
 # AWS SPECIFIC DEFAULTS
 AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-xenial-daily-amd64-server-*"
 AWS_PROFILE="default"
+# Official Canonical OwnerId
 AWS_AMI_OWNER=099720109477
 AWS_KEYPAIR_NAME=$USER
 
