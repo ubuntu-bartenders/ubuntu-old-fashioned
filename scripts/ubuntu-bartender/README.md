@@ -20,7 +20,7 @@ It builds Ubuntu images. Like what you'd find [here][2]
 
 See: [Ubuntu Old Fashioned][1]
 
-## I'm still confused, can go into more detail?
+## I'm still confused, can you go into more detail?
 
 Absolutely. Here's an incomplete, high-level overview of the components
 of an Ubuntu image build with Ubuntu Bartender:
@@ -97,6 +97,14 @@ ubuntu-bionic-bartender --help
 ubuntu-bartender --help
 ```
 
+## You mentioned an example specifying different build providers. Why does that matter?
+
+The Ubuntu image build happens in a LXD container within a xenial VM. Ubuntu Bartender can manage the lifecycle of that VM, which can run in either [Multipass][7] or [AWS][8].
+
+Multipass is more convenient - all of your VMs run locally and it's free.
+
+AWS is faster - the cloud has fast in-cloud mirrors of the apt repositories, which dramatically reduces the time it takes to build an image.
+
 ## More questions?
 
 Feel free to open an issue and we can add more to the README.
@@ -107,3 +115,5 @@ Feel free to open an issue and we can add more to the README.
 [4]: https://launchpad.net/launchpad-buildd
 [5]: https://manpages.debian.org/testing/live-build/live-build.7.en.html
 [6]: https://launchpad.net/livecd-rootfs
+[7]: https://multipass.run/
+[8]: https://aws.amazon.com/
