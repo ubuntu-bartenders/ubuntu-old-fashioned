@@ -18,7 +18,7 @@ from typing import Dict, List, Text, Tuple  # noqa
 
 PKG_INSTALL_CMDS = [
     ["sudo", "add-apt-repository", "-y", "ppa:cloud-images/old-fashioned"],
-    ["sudo", "add-apt-repository", "-y", "ppa:launchpad/ppa"],
+    ["sudo", "add-apt-repository", "-y", "ppa:canonical-is-sa/ubuntu/buildd"],
     ["sudo", "apt-get", "update"],
     ["sudo", "apt-get", "install", "-y", "oldfashioned"],
     ["sudo", "apt-get", "install", "-y", "launchpad-buildd", "bzr",
