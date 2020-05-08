@@ -130,7 +130,7 @@ DEPENDENCIES=(launchpad-buildd bzr python-ubuntutools)
 for dep in ${DEPENDENCIES[@]} ; do
     if ! [[ $(dpkg -l | grep ^ii | grep $dep) != "" ]] ; then
         echo "Please install the required dependencies for this script:"
-        echo "  sudo add-apt-repository -y -u ppa:launchpad/ppa"
+        echo "  sudo add-apt-repository -y -u ppa:canonical-is-sa/ubuntu/buildd"
         echo "  sudo apt install -y ${DEPENDENCIES[@]}"
         exit 1
     fi
