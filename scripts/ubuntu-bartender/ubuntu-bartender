@@ -318,7 +318,7 @@ build-provider-create $bartender_name
 #!/bin/bash -x
 sudo add-apt-repository -y -u ppa:canonical-is-sa/ubuntu/buildd
 sudo apt-get -q update
-sudo apt-get -q install -y launchpad-buildd bzr python-ubuntutools git python3-ubuntutools python3-launchpadlib
+sudo apt-get -q install -y launchpad-buildd bzr git python3-ubuntutools python3-launchpadlib
 cd livecd-rootfs
 sudo -E ../ubuntu-old-fashioned/old-fashioned-image-build --no-cleanup $chroot_archive_flag $series_flag $@
 EOF
