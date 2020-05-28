@@ -125,7 +125,7 @@ if [ x$SERIES = "x" ] ; then
     exit 1
 fi
 
-DEPENDENCIES=(launchpad-buildd bzr python-ubuntutools)
+DEPENDENCIES=(launchpad-buildd bzr python3-ubuntutools python3-launchpadlib)
 
 for dep in ${DEPENDENCIES[@]} ; do
     if ! [[ $(dpkg -l | grep ^ii | grep $dep) != "" ]] ; then
