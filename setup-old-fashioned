@@ -22,7 +22,7 @@ PKG_INSTALL_CMDS = [
     ["sudo", "apt-get", "update"],
     ["sudo", "apt-get", "install", "-y", "oldfashioned"],
     ["sudo", "apt-get", "install", "-y", "launchpad-buildd", "bzr",
-     "python-ubuntutools", "distro-info",
+     "python3-ubuntutools", "python3-launchpadlib", "distro-info",
      ],
 ]
 
