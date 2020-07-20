@@ -252,7 +252,7 @@ if [ -z "$SNAP_MULTIPASS_IS_STRICT_CONFINEMENT" ]
 then
   temp_dir=$(mktemp --directory)
 else
-  temp_dir=$(mktemp --tmpdir=$HOME --directory multipass-ubuntu-bartender.XXXXXXXXXX)
+  temp_dir=$(mktemp --tmpdir="$HOME" --directory multipass-ubuntu-bartender.XXXXXXXXXX)
 fi
 
 bartender_name=$(petname)-ubuntu-bartender
@@ -345,5 +345,3 @@ build-provider-run $bartender_name -- bash mix-old-fashioned &>$bartender_name.l
 echo "Pouring $drink_name..."
 build-provider-run $bartender_name -- tar czf drink.tar.gz build.output
 build-provider-download $bartender_name drink.tar.gz $drink_name
-
-[ -z "$SNAP_MULTIPASS_IS_STRICT_CONFINEMENT" ] || unset SNAP_MULTIPASS_IS_STRICT_CONFINEMENT
