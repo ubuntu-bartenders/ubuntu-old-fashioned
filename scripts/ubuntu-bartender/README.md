@@ -26,7 +26,7 @@ Absolutely. Here's an incomplete, high-level overview of the components
 of an Ubuntu image build with Ubuntu Bartender:
 
 #### [Ubuntu Bartender][3]
-- Manages the lifecycle of a xenial VM in which the image build is run
+- Manages the lifecycle of a bionic VM in which the image build is run
 - Collects the dependencies of an Ubuntu Old Fashioned image build
 - Runs an Ubuntu Old Fashioned image build
 - Downloads any artifacts produced by the build
@@ -99,7 +99,7 @@ ubuntu-bartender --help
 
 ## You mentioned an example specifying different build providers. Why does that matter?
 
-The Ubuntu image build happens in a LXD container within a xenial VM. Ubuntu Bartender can manage the lifecycle of that VM, which can run in either [Multipass][7] or [AWS][8].
+The Ubuntu image build happens in a LXD container within a bionic VM. Ubuntu Bartender can manage the lifecycle of that VM, which can run in either [Multipass][7] or [AWS][8].
 
 Multipass is more convenient - all of your VMs run locally and it's free.
 

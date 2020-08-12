@@ -21,7 +21,7 @@ manage the Ubuntu Old Fashioned build for you.
 
 ## Installation
 
-On Ubuntu (**only works for Xenial**):
+On Ubuntu (**only works for Bionic or Xenial**):
 
 The easiest way to install is to use the included setup script:
 
