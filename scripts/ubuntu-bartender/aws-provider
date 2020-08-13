@@ -1,7 +1,7 @@
 function _find-ami() {
-  AMI_FILTERS="--filters Name=name,Values=ubuntu/images-testing/hvm-ssd/ubuntu-xenial-daily-amd64-server-*"
+  AMI_FILTERS="--filters Name=name,Values=$AWS_AMI_NAME_FILTER"
   aws --region "$region" ec2 describe-images \
-      --owners 099720109477 $AMI_FILTERS --output json |
+      --owners "$AWS_AMI_OWNER" $AMI_FILTERS --output json |
     jq -r '.Images | sort_by(.["CreationDate"])[-1].ImageId'
 }
 
@@ -53,12 +53,12 @@ function build-provider-assert-ready {
     exit 255
   fi
 
-  if ! aws ec2 describe-key-pairs --key-names "$USER" 2>/dev/null >/dev/null; then
-    echo "error: no registered keypair available for $USER" >&2
+  if ! aws --profile "$AWS_PROFILE" ec2 describe-key-pairs --key-names "$AWS_KEYPAIR_NAME" 2>/dev/null >/dev/null; then
+    echo "error: no registered keypair named $AWS_KEYPAIR_NAME" >&2
     exit 255
   fi
 
-  region=$(aws configure get region)
+  region=$(aws --profile "$AWS_PROFILE" configure get region)
 }
 
 function build-provider-destroy {
@@ -72,15 +72,17 @@ function build-provider-destroy {
 function build-provider-create {
   echo "Creating $1 on AWS..."
   instance_id=$(aws --output json --region "$region" \
+                    --profile "$AWS_PROFILE" \
                     ec2 run-instances \
-                    --key-name "$USER" \
+                    --key-name "$AWS_KEYPAIR_NAME" \
                     --instance-type m5.large \
                     --image-id "$(_find-ami)" \
                     --block-device-mappings "DeviceName=/dev/sda1,Ebs={VolumeSize=50,VolumeType=gp2}" \
                     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$1}]" |
                   jq -r '.Instances[0].InstanceId')
   _wait-instance-running
-  ip_addr=$(aws --output json --region "$region" ec2 describe-instances \
+  ip_addr=$(aws --profile $AWS_PROFILE --output json --region "$region" \
+                ec2 describe-instances \
                 --instance-ids "$instance_id" |
               jq -r '.Reservations[0].Instances[0].PublicIpAddress')
   _wait-instance-connectable

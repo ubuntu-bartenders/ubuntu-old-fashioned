@@ -86,6 +86,20 @@ else
   LIVECD_ROOTFS_BRANCH=${LIVECD_ROOTFS_BRANCH:-ubuntu/master}
 fi
 
+
+############ Provider Configuration ##########################################
+
+# Providers also have some config
+# This sets default values, and allows for inclusion in CLI and file
+# Please preface each provider default with the provider name
+
+# AWS SPECIFIC DEFAULTS
+AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-xenial-daily-amd64-server-*"
+AWS_PROFILE="default"
+# Official Canonical OwnerId
+AWS_AMI_OWNER=099720109477
+AWS_KEYPAIR_NAME=$USER
+
 # We also pull in explicitly set variables on the command line
 
 function print-usage {
@@ -130,12 +144,42 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             after the build completes.
                                             Value: Cleanup? $SHOULD_CLEANUP
 
+    --aws-ami-name-filter <image-name>      Filter for finding an AWS ami by name
+                                            defaults to Xenial AMD64. This is
+                                            the base for the builds
+                                            Value: $AWS_AMI_NAME_FILTER
+
+    --aws-profile <profile>                 AWS profile used with the aws cli
+                                            Value: $AWS_PROFILE
+
+    --aws-ami-owner <owner_id>              AWS OwnerId, user in conjunction with
+                                            --aws-ami-filter-name to find a base image
+                                            for building. Defaults to Canonical
+                                            Value: $AWS_AMI_OWNER
+
+    --aws-keypair-name                      Keypair name associated with AWS profile
+                                            Default is $USER       
+                                            Value: $AWS_KEYPAIR_NAME
+
     --help                                  Print this help message.
 
 Options specified after '--' separator are used by Ubuntu Old Fashioned directly.
 
 EOF
 }
+
+# These can be added to a config file as well
+# Check/etc and user home. 
+# user home takes precedence over etc
+# Order is important as well, cli args win
+POSSIBLE_CONF_FILES=("/etc/ubuntu-bartender/ubuntu-bartender.rc" ~/".ubuntu-bartender.rc")
+for file in "${POSSIBLE_CONF_FILES[@]}"
+do
+  if [[ -f "${file}" ]]; then
+    echo "Sourcing configuration file: $file"
+    source $file
+  fi
+done
 
 # Which we parse with the typical boilerplate:
 
@@ -188,6 +232,22 @@ do
       ;;
     --no-cleanup)
       SHOULD_CLEANUP=NO
+      ;;
+    --aws-ami-name-filter)
+      AWS_AMI_NAME_FILTER="$2"
+      shift
+      ;;
+    --aws-profile)
+      AWS_PROFILE="$2"
+      shift
+      ;;
+    --aws-ami-owner)
+      AWS_AMI_OWNER="$2"
+      shift
+      ;;
+    --aws-keypair-name)
+      AWS_KEYPAIR_NAME="$2"
+      shift
       ;;
     --)
       shift

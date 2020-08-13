@@ -105,6 +105,25 @@ Multipass is more convenient - all of your VMs run locally and it's free.
 
 AWS is faster - the cloud has fast in-cloud mirrors of the apt repositories, which dramatically reduces the time it takes to build an image.
 
+## Configuration
+You may find more yourself passing in the same arguments over and over again. To help out, Bartender will check a couple places for configuration files:
+
+* `~/.ubuntu-bartender.rc`
+* `/etc/ubuntu-bartender/ubuntu-bartender.rc`
+
+Configuration hierarchy is (listed in order of resolution)
+1. DEFAULTS
+2. Configuration File
+3. CLI
+
+### Configuring Providers
+Provider options are prepended with the provider name. example `AWS_PROFILE`. This allows you to, for example, set your profile and keypair name for interacting with AWS. In a config file:
+
+```
+AWS_PROFILE=work_account
+AWS_KEYPAIR_NAME=aws_testing_keypair
+```
+
 ## More questions?
 
 Feel free to open an issue and we can add more to the README.
