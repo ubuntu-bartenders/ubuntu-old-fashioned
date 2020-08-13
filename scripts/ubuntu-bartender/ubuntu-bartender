@@ -144,22 +144,22 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             after the build completes.
                                             Value: Cleanup? $SHOULD_CLEANUP
 
-    --aws-ami-filter-name <image-name>      Image name for finding an AWS ami
+    --aws-ami-name-filter <image-name>      Filter for finding an AWS ami by name
                                             defaults to Xenial AMD64. This is
                                             the base for the builds
-                                            Value: $AWS-AMI-FILTER-NAME
+                                            Value: $AWS_AMI_NAME_FILTER
 
     --aws-profile <profile>                 AWS profile used with the aws cli
-                                            Value: $AWS-PROFILE
+                                            Value: $AWS_PROFILE
 
     --aws-ami-owner <owner_id>              AWS OwnerId, user in conjunction with
                                             --aws-ami-filter-name to find a base image
                                             for building. Defaults to Canonical
-                                            Value: $AWS-AMI-OWNER
+                                            Value: $AWS_AMI_OWNER
 
     --aws-keypair-name                      Keypair name associated with AWS profile
                                             Default is $USER       
-                                            Value: $AWS-KEYPAIR-NAME
+                                            Value: $AWS_KEYPAIR_NAME
 
     --help                                  Print this help message.
 
@@ -233,7 +233,7 @@ do
     --no-cleanup)
       SHOULD_CLEANUP=NO
       ;;
-    --aws-ami-filter-name)
+    --aws-ami-name-filter)
       AWS_AMI_NAME_FILTER="$2"
       shift
       ;;
