@@ -172,7 +172,7 @@ EOF
 # Check/etc and user home. 
 # user home takes precedence over etc
 # Order is important as well, cli args win
-POSSIBLE_CONF_FILES=("/etc/ubuntu-bartender/bartender.rc" ~/".bartender.rc")
+POSSIBLE_CONF_FILES=("/etc/ubuntu-bartender/ubuntu-bartender.rc" ~/".ubuntu-bartender.rc")
 for file in "${POSSIBLE_CONF_FILES[@]}"
 do
   if [[ -f "${file}" ]]; then

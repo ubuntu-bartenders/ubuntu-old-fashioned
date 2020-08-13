@@ -108,8 +108,8 @@ AWS is faster - the cloud has fast in-cloud mirrors of the apt repositories, whi
 ## Configuration
 You may find more yourself passing in the same arguments over and over again. To help out, Bartender will check a couple places for configuration files:
 
-* `~/.bartender.rc`
-* `/etc/ubuntu-bartender/bartender.rc`
+* `~/.ubuntu-bartender.rc`
+* `/etc/ubuntu-bartender/ubuntu-bartender.rc`
 
 Configuration hierarchy is (listed in order of resolution)
 1. DEFAULTS
