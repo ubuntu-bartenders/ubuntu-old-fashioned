@@ -160,7 +160,11 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --aws-keypair-name                      Keypair name associated with AWS profile
                                             Default is $USER       
                                             Value: $AWS_KEYPAIR_NAME
-
+    --temp-dir-loc                          Parent folder to build the temp dir used
+                                            by bartender; note that this must be
+                                            a directory that multipass (a strictly-
+                                            confined snap) can access
+                                            Value: $HOME
     --help                                  Print this help message.
 
 Options specified after '--' separator are used by Ubuntu Old Fashioned directly.
@@ -247,6 +251,10 @@ do
       ;;
     --aws-keypair-name)
       AWS_KEYPAIR_NAME="$2"
+      shift
+      ;;
+    --temp-dir-loc)
+      HOME="$2"
       shift
       ;;
     --)
