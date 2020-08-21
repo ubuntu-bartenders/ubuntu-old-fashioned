@@ -74,6 +74,9 @@ BUILD_PROVIDER=${BUILD_PROVIDER:-multipass}
 
 SHOULD_CLEANUP=${SHOULD_CLEANUP:-YES}
 
+# Where to build the ingredients.tar.gz file
+TEMP_DIR_LOC=$HOME
+
 # Parse the name of the script to see if we can infer some variables
 
 maybe_series=$(basename $0 | cut -d'-' -f2)
@@ -254,7 +257,7 @@ do
       shift
       ;;
     --temp-dir-loc)
-      HOME="$2"
+      TEMP_DIR_LOC="$2"
       shift
       ;;
     --)
@@ -313,7 +316,7 @@ fi
 
 # Let's build all the things!
 
-temp_dir=$(mktemp --tmpdir="$HOME" --directory ubuntu-bartender-multipass.XXXXXXXXXX)
+temp_dir=$(mktemp --tmpdir="$TEMP_DIR_LOC" --directory ubuntu-bartender-multipass.XXXXXXXXXX)
 bartender_name=$(petname)-ubuntu-bartender
 drink_name=${bartender_name/-bartender/-on-the-rocks.tar.gz}
 
