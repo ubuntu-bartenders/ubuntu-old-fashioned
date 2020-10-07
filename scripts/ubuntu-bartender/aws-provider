@@ -26,7 +26,7 @@ function _wait-instance-running() {
 
 function _wait-instance-connectable() {
   for attempt in $(seq 12); do
-    if ! ssh -qo StrictHostKeyChecking=no "ubuntu@$ip_addr" -- true; then
+    if ! ssh -i ~/.ssh/${AWS_KEYPAIR_NAME}.pem -qo StrictHostKeyChecking=no "ubuntu@$ip_addr" -- true; then
       sleep 10 
     else
       state=connectable
@@ -89,15 +89,15 @@ function build-provider-create {
 }
 
 function build-provider-upload {
-  scp -qo StrictHostKeyChecking=no "$2" "ubuntu@$ip_addr:$3"
+  scp -v -i ~/.ssh/${AWS_KEYPAIR_NAME}.pem -qo StrictHostKeyChecking=no "$2" "ubuntu@$ip_addr:$3"
 }
 
 function build-provider-download {
-  scp -qo StrictHostKeyChecking=no "ubuntu@$ip_addr:$2" "$3"
+  scp -v -i ~/.ssh/${AWS_KEYPAIR_NAME}.pem -qo StrictHostKeyChecking=no "ubuntu@$ip_addr:$2" "$3"
 }
 
 function build-provider-run {
   args=$(echo -- $@ | sed 's/.*--//')
-  ssh -qo StrictHostKeyChecking=no "ubuntu@$ip_addr" -- $args
+  ssh -i ~/.ssh/${AWS_KEYPAIR_NAME}.pem -qo StrictHostKeyChecking=no "ubuntu@$ip_addr" -- $args
 }
 
