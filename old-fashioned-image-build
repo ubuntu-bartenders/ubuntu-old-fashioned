@@ -10,6 +10,7 @@
 IMG_FORMAT="ext4"
 PROJECT="ubuntu-cpc"
 SUBPROJECT=""
+PROPOSED=""
 SERIES=""
 USE_CHROOT_CACHE=false
 CLEANUP=true
@@ -23,6 +24,10 @@ while :; do
         --minimized)
             # Pass this flag to build the 'minimal' image family
             SUBPROJECT="--subproject minimized"
+            ;;
+        --proposed)
+            # Build from -proposed pocket
+            PROPOSED="--proposed"
             ;;
         --subproject)
             # Depends on project
@@ -199,11 +204,20 @@ export MIRROR=$(egrep "(archive|ports)" /etc/apt/sources.list|head -1 | \
 export MIRROR_PATH=$(egrep "(archive|ports)" /etc/apt/sources.list|head -1 | \
                cut -d' ' -f2 | cut -d'/' -f4)
 
-/usr/share/launchpad-buildd/bin/in-target override-sources-list \
-  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME \
-    "deb http://$MIRROR/${MIRROR_PATH} $SERIES main restricted universe multiverse" \
-    "deb http://$MIRROR/${MIRROR_PATH} $SERIES-security main restricted universe multiverse" \
-    "deb http://$MIRROR/${MIRROR_PATH} $SERIES-updates main restricted universe multiverse"
+if [ -n "$PROPOSED" ]; then
+  /usr/share/launchpad-buildd/bin/in-target override-sources-list \
+    --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME \
+      "deb http://$MIRROR/${MIRROR_PATH} $SERIES main restricted universe multiverse" \
+      "deb http://$MIRROR/${MIRROR_PATH} $SERIES-proposed main restricted universe multiverse" \
+      "deb http://$MIRROR/${MIRROR_PATH} $SERIES-security main restricted universe multiverse" \
+      "deb http://$MIRROR/${MIRROR_PATH} $SERIES-updates main restricted universe multiverse"
+else
+  /usr/share/launchpad-buildd/bin/in-target override-sources-list \
+    --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME \
+      "deb http://$MIRROR/${MIRROR_PATH} $SERIES main restricted universe multiverse" \
+      "deb http://$MIRROR/${MIRROR_PATH} $SERIES-security main restricted universe multiverse" \
+      "deb http://$MIRROR/${MIRROR_PATH} $SERIES-updates main restricted universe multiverse"
+fi
 
 /usr/share/launchpad-buildd/bin/in-target update-debian-chroot \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
@@ -237,7 +251,7 @@ time /usr/share/launchpad-buildd/bin/in-target buildlivefs \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
   --project $PROJECT $SUBPROJECT --datestamp $SERIAL --image-format $IMG_FORMAT \
   $EXTRA_PPA \
-  $IMAGE_TARGET $REPO_SNAPSHOT $SNAP_COHORT
+  $IMAGE_TARGET $REPO_SNAPSHOT $SNAP_COHORT $PROPOSED
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
 rm -rf $OUTPUT_DIRECTORY
