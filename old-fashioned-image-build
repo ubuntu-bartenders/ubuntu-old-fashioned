@@ -217,7 +217,7 @@ if [ "$PROPOSED_IN_IMAGE" = "true" ]; then
 fi
 
 /usr/share/launchpad-buildd/bin/in-target override-sources-list \
-  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME ${sources} \
+  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME \
     "deb http://$MIRROR/${MIRROR_PATH} $SERIES main restricted universe multiverse" \
     "deb http://$MIRROR/${MIRROR_PATH} $SERIES-security main restricted universe multiverse" \
     "deb http://$MIRROR/${MIRROR_PATH} $SERIES-updates main restricted universe multiverse" \
