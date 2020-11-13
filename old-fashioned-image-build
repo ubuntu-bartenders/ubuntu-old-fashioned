@@ -10,7 +10,8 @@
 IMG_FORMAT="ext4"
 PROJECT="ubuntu-cpc"
 SUBPROJECT=""
-PROPOSED=""
+PROPOSED_BUILD=""
+PROPOSED_IN_IMAGE="false"
 SERIES=""
 USE_CHROOT_CACHE=false
 CLEANUP=true
@@ -25,9 +26,14 @@ while :; do
             # Pass this flag to build the 'minimal' image family
             SUBPROJECT="--subproject minimized"
             ;;
-        --proposed)
+        --build-from-proposed)
             # Build from -proposed pocket
-            PROPOSED="--proposed"
+            PROPOSED_BUILD="--proposed"
+            ;;
+        --enable-proposed-in-image)
+            # Enable the -proposed pocket in the image(s) produced from the
+            # build
+            PROPOSED_IN_IMAGE="true"
             ;;
         --subproject)
             # Depends on project
@@ -204,21 +210,19 @@ export MIRROR=$(egrep "(archive|ports)" /etc/apt/sources.list|head -1 | \
 export MIRROR_PATH=$(egrep "(archive|ports)" /etc/apt/sources.list|head -1 | \
                cut -d' ' -f2 | cut -d'/' -f4)
 
-if [ -n "$PROPOSED" ]; then
-  /usr/share/launchpad-buildd/bin/in-target override-sources-list \
-    --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME \
-      "deb http://$MIRROR/${MIRROR_PATH} $SERIES main restricted universe multiverse" \
-      "deb http://$MIRROR/${MIRROR_PATH} $SERIES-proposed main restricted universe multiverse" \
-      "deb http://$MIRROR/${MIRROR_PATH} $SERIES-security main restricted universe multiverse" \
-      "deb http://$MIRROR/${MIRROR_PATH} $SERIES-updates main restricted universe multiverse"
-else
-  /usr/share/launchpad-buildd/bin/in-target override-sources-list \
-    --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME \
-      "deb http://$MIRROR/${MIRROR_PATH} $SERIES main restricted universe multiverse" \
-      "deb http://$MIRROR/${MIRROR_PATH} $SERIES-security main restricted universe multiverse" \
-      "deb http://$MIRROR/${MIRROR_PATH} $SERIES-updates main restricted universe multiverse"
+proposed_source=""
+
+if [ "$PROPOSED_IN_IMAGE" = "true" ]; then
+  proposed_source="deb http://$MIRROR/${MIRROR_PATH} $SERIES-proposed main restricted universe multiverse"
 fi
 
+/usr/share/launchpad-buildd/bin/in-target override-sources-list \
+  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME ${sources} \
+    "deb http://$MIRROR/${MIRROR_PATH} $SERIES main restricted universe multiverse" \
+    "deb http://$MIRROR/${MIRROR_PATH} $SERIES-security main restricted universe multiverse" \
+    "deb http://$MIRROR/${MIRROR_PATH} $SERIES-updates main restricted universe multiverse" \
+    "${proposed_source}"
+  
 /usr/share/launchpad-buildd/bin/in-target update-debian-chroot \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
 
@@ -251,7 +255,7 @@ time /usr/share/launchpad-buildd/bin/in-target buildlivefs \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
   --project $PROJECT $SUBPROJECT --datestamp $SERIAL --image-format $IMG_FORMAT \
   $EXTRA_PPA \
-  $IMAGE_TARGET $REPO_SNAPSHOT $SNAP_COHORT $PROPOSED
+  $IMAGE_TARGET $REPO_SNAPSHOT $SNAP_COHORT $PROPOSED_BUILD
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
 rm -rf $OUTPUT_DIRECTORY
