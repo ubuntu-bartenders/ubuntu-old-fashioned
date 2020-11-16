@@ -74,6 +74,9 @@ BUILD_PROVIDER=${BUILD_PROVIDER:-multipass}
 
 SHOULD_CLEANUP=${SHOULD_CLEANUP:-YES}
 
+# Where to build the ingredients.tar.gz file
+TEMP_DIR_LOC=$HOME
+
 # Parse the name of the script to see if we can infer some variables
 
 maybe_series=$(basename $0 | cut -d'-' -f2)
@@ -160,7 +163,11 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --aws-keypair-name                      Keypair name associated with AWS profile
                                             Default is $USER       
                                             Value: $AWS_KEYPAIR_NAME
-
+    --temp-dir-loc                          Parent folder to build the temp dir used
+                                            by bartender; note that this must be
+                                            a directory that multipass (a strictly-
+                                            confined snap) can access
+                                            Value: $TEMP_DIR_LOC
     --help                                  Print this help message.
 
 Options specified after '--' separator are used by Ubuntu Old Fashioned directly.
@@ -249,6 +256,10 @@ do
       AWS_KEYPAIR_NAME="$2"
       shift
       ;;
+    --temp-dir-loc)
+      TEMP_DIR_LOC="$2"
+      shift
+      ;;
     --)
       shift
       break
@@ -305,7 +316,7 @@ fi
 
 # Let's build all the things!
 
-temp_dir=$(mktemp --tmpdir="$HOME" --directory ubuntu-bartender-multipass.XXXXXXXXXX)
+temp_dir=$(mktemp --tmpdir="$TEMP_DIR_LOC" --directory ubuntu-bartender-multipass.XXXXXXXXXX)
 bartender_name=$(petname)-ubuntu-bartender
 drink_name=${bartender_name/-bartender/-on-the-rocks.tar.gz}
 
