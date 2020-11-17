@@ -186,7 +186,6 @@ SQUID_ADDRESS=$(cat /etc/apt/apt.conf.d/* | sed -n 's/Acquire::http::Proxy "\(.*
 SQUID_TMP_CONFIG=/tmp/30squid-proxy
 HTTP_PROXY=""
 if [ x"$SQUID_ADDRESS" != 'x' ] ; then
-    HTTP_PROXY="--http-proxy=$SQUID_ADDRESS"
     cat > /tmp/30squid-proxy << EOF
 Acquire::http::Proxy "$SQUID_ADDRESS";
 EOF
