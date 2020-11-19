@@ -160,7 +160,9 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             for building. Defaults to Canonical
                                             Value: $AWS_AMI_OWNER
 
-    --aws-keypair-name                      Keypair name associated with AWS profile
+    --aws-keypair-name                      Keypair name associated with AWS profile;
+                                            local private key must be a .pem
+                                            with chmod 400 in ~/.ssh/
                                             Default is $USER       
                                             Value: $AWS_KEYPAIR_NAME
     --temp-dir-loc                          Parent folder to build the temp dir used
