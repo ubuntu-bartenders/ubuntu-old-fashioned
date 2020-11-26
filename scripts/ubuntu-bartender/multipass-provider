@@ -11,7 +11,7 @@ function build-provider-destroy {
 }
 
 function build-provider-create {
-  multipass launch --disk 50G --mem 8G --name "$1" daily:x
+  multipass launch --disk ${MULTIPASS_DISK_SIZE:-50G} --mem ${MULTIPASS_DISK_SIZE:-8G} --name "$1" daily:b
 }
 
 function build-provider-upload {
