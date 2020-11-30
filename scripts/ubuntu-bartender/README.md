@@ -122,6 +122,9 @@ Provider options are prepended with the provider name. example `AWS_PROFILE`. Th
 ```
 AWS_PROFILE=work_account
 AWS_KEYPAIR_NAME=aws_testing_keypair
+MULTIPASS_DISK_SIZE=multipass_disk_size
+MULTIPASS_MEM_SIZE=multipass_memory_size
+MULTIPASS_IMAGE=multipass_image
 ```
 
 ## More questions?

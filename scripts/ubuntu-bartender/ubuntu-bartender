@@ -103,6 +103,11 @@ AWS_PROFILE="default"
 AWS_AMI_OWNER=099720109477
 AWS_KEYPAIR_NAME=$USER
 
+# MULTIPASS SPECIFIC DEFAULTS
+MULTIPASS_DISK_SIZE=50G
+MULTIPASS_MEM_SIZE=8G
+MULTIPASS_IMAGE=daily:b # daily image of bionic
+
 # We also pull in explicitly set variables on the command line
 
 function print-usage {
