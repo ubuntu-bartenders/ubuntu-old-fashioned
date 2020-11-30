@@ -197,11 +197,11 @@ SQUID_ADDRESS=$(cat /etc/apt/apt.conf.d/* | sed -n 's/Acquire::http::Proxy "\(.*
 SQUID_TMP_CONFIG=/tmp/30squid-proxy
 HTTP_PROXY=""
 if [ x"$SQUID_ADDRESS" != 'x' ] ; then
-    HTTP_PROXY="--http-proxy=$SQUID_ADDRESS"
     cat > /tmp/30squid-proxy << EOF
 Acquire::http::Proxy "$SQUID_ADDRESS";
 EOF
     lxc file push $SQUID_TMP_CONFIG lp-$SERIES-${ARCH}/etc/apt/apt.conf.d/30squid-proxy
+    lxc config set lp-$SERIES-${ARCH} environment.LB_APT_HTTP_PROXY "$SQUID_ADDRESS"
 fi
 
 # Use the same apt mirror as the host
