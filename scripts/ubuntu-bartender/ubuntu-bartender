@@ -99,9 +99,11 @@ fi
 # AWS SPECIFIC DEFAULTS
 AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-amd64-server-*"
 AWS_PROFILE="default"
+AWS_INSTANCE_TYPE="m5.large"
 # Official Canonical OwnerId
 AWS_AMI_OWNER=099720109477
 AWS_KEYPAIR_NAME=$USER
+AWS_ARM_BUILD=false
 
 # MULTIPASS SPECIFIC DEFAULTS
 MULTIPASS_DISK_SIZE=50G
@@ -153,8 +155,9 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             Value: Cleanup? $SHOULD_CLEANUP
 
     --aws-ami-name-filter <image-name>      Filter for finding an AWS ami by name
-                                            defaults to Xenial AMD64. This is
-                                            the base for the builds
+                                            defaults to Bionic AMD64. This is
+                                            the base for the builds. for ARM:
+                                            ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-arm64-server-*
                                             Value: $AWS_AMI_NAME_FILTER
 
     --aws-profile <profile>                 AWS profile used with the aws cli
@@ -170,6 +173,14 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             with chmod 400 in ~/.ssh/
                                             Default is $USER       
                                             Value: $AWS_KEYPAIR_NAME
+
+    --aws-instance-type                     EC2 instance type. default is m5.large.
+                                            m6g.large is a good choice for arm
+                                            value: $AWS_INSTANCE_TYPE
+
+    --aws-arm-build                         Short hand switch for safe arm64 defaults
+                                            This will override --aws-instance-type and --aws-ami-name-filter
+
     --temp-dir-loc                          Parent folder to build the temp dir used
                                             by bartender; note that this must be
                                             a directory that multipass (a strictly-
@@ -263,6 +274,13 @@ do
       AWS_KEYPAIR_NAME="$2"
       shift
       ;;
+    --aws-instance-type)
+      AWS_INSTANCE_TYPE="$2"
+      shift
+      ;;
+    --aws-arm-build)
+      AWS_ARM_BUILD=true
+      ;;
     --temp-dir-loc)
       TEMP_DIR_LOC="$2"
       shift
@@ -293,6 +311,12 @@ if [ "$SHOW_HELP" = "YES" ]
 then
   print-usage
   exit 255
+fi
+
+if [ "$AWS_ARM_BUILD" = "true" ]
+then
+  AWS_INSTANCE_TYPE="m6g.large"
+  AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-arm64-server-*"
 fi
 
 # Verify that the specified build provider is available and ready

@@ -127,6 +127,18 @@ MULTIPASS_MEM_SIZE=multipass_memory_size
 MULTIPASS_IMAGE=multipass_image
 ```
 
+## ARM builds
+ARM is growing in support, and there is demand for builds. However, most of us do not have an ARM based daily driver for development. Thankfully, AWS to the rescue
+
+There is a quick option for calling up ARM defaults for aws, `--aws-arm-build` (AWS_ARM_BUILD). This is a boolean style flag, so via the cli, passing the flag is sufficient
+For configuration in file or env_var, please use true or false (literal strings). The only truthy value is the literal string "true". 
+
+This will run a build searching for an ARM based ami (`AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-arm64-server-*"`) and 
+use an arm instance type (`AWS_INSTANCE_TYPE="m6g.large"`). This option is meant as a quick flag so you don't need to look up filter name or instance types.
+
+Know that setting `--aws-ami-name-filter` and `--aws-instance-type` **and** `--aws-arm-build` will result in the `--aws-arm-build` defaults being used, **not** your passed in values.
+If you want to set specifics, please use `--aws-ami-name-filter` and `--aws-instance-type` directly.
+
 ## More questions?
 
 Feel free to open an issue and we can add more to the README.
