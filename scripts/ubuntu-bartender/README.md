@@ -71,6 +71,12 @@ ubuntu-bartender --livecd-rootfs-dir ~/local_livecd-rootfs # Use a local checkou
 ubuntu-bartender --chroot-archive local_rootfs.tar.gz # Use a different rootfs for the LXD container
 ```
 
+If you want to include some extra hooks from a local checkout, that can also be done:
+
+```
+ubuntu-bartender --livecd-rootfs-dir ~/local_livecd-rootfs --hook-extras-dir ~/local_hooks_dir
+```
+
 ## That's too many options, how can I keep track of them all?
 
 Use `--help` to list all available options for Ubuntu Bartender. The help text will update to include any configuration already specified.
