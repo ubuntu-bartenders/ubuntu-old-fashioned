@@ -313,10 +313,14 @@ then
   exit 255
 fi
 
+# if --aws-arm-build provided
+# setup a default aws arm build
+# remember -- you can always specific all your own info
 if [ "$AWS_ARM_BUILD" = "true" ]
 then
   AWS_INSTANCE_TYPE="m6g.large"
   AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-arm64-server-*"
+  BUILD_PROVIDER="aws"
 fi
 
 # Verify that the specified build provider is available and ready
