@@ -1,0 +1,65 @@
+function _wait-instance-connectable() {
+  for attempt in $(seq 12); do
+    if ! ssh -qo StrictHostKeyChecking=no "ubuntu@$ip_addr" -- true; then
+      sleep 10
+    else
+      state=connectable
+      break
+    fi
+  done
+
+  if [ "$state" != "connectable" ]; then
+    echo "error: instance not 'connectable' after 2 minutes"
+    exit 255
+  fi
+}
+
+function build-provider-assert-ready {
+  if ! command -v az &>/dev/null
+  then
+    echo "error: azure-cli was not found in PATH" >&2
+    exit 255
+  fi
+
+  if ! command -v jq &>/dev/null
+  then
+    echo "error: jq was not found in PATH" >&2
+    exit 255
+  fi
+
+  if [ ! -f "$AZURE_PUBKEY_PATH" ]; then
+    echo "error: no such file $AZURE_PUBKEY_PATH" >&2
+    exit 255
+  fi
+}
+
+function build-provider-destroy {
+  echo "Destroying group $1 on Azure..."
+  az group delete -y -g "$1" > /dev/null 2>&1
+}
+
+function build-provider-create {
+  echo "Creating $1 on Azure..."
+  az group create -l "$AZURE_LOCATION" -g "$1" > /dev/null 2>&1
+  ip_addr=$(az vm create --name "$1" \
+               --resource-group "$1" \
+               --image "$AZURE_URN" \
+               --size "$AZURE_INSTANCE_SIZE" \
+               --admin-username ubuntu \
+               --ssh-key-value "$(cat "$AZURE_PUBKEY_PATH")" 2> /dev/null |
+               jq -r '.publicIpAddress')
+  _wait-instance-connectable
+}
+
+function build-provider-upload {
+  scp -qo StrictHostKeyChecking=no "$2" "ubuntu@$ip_addr:$3"
+}
+
+function build-provider-download {
+  scp -qo StrictHostKeyChecking=no "ubuntu@$ip_addr:$2" "$3"
+}
+
+function build-provider-run {
+  args=$(echo -- $@ | sed 's/.*--//')
+  ssh -qo StrictHostKeyChecking=no "ubuntu@$ip_addr" -- $args
+}
