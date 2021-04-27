@@ -61,6 +61,7 @@ Where do you want the VM to run? You can specify:
 
 ```
 ubuntu-bartender --build-provider aws # build on a remote AWS instance
+ubuntu-bartender --build-provider azure # build on a remote Azure instance
 ubuntu-bartender --build-provider multipass # build with a local multipass instance
 ```
 
@@ -125,6 +126,26 @@ AWS_KEYPAIR_NAME=aws_testing_keypair
 MULTIPASS_DISK_SIZE=multipass_disk_size
 MULTIPASS_MEM_SIZE=multipass_memory_size
 MULTIPASS_IMAGE=multipass_image
+```
+
+#### Azure
+
+To build on Azure, specify `--build-provider azure`. You will also need to provide a [location](https://azure.microsoft.com/en-us/global-infrastructure/geographies/) (region) via `--azure-location` (default to `France Central`); a public SSH key for connecting to the VM (via `--azure-pubkey-path`, default to `$HOME/.ssh/$USER.pub`). Finally you can provide a custom image "URN" (via `--azure-urn`, just use the default if you don't know what you do) and the Azure instance [size](https://docs.microsoft.com/en-us/azure/virtual-machines/sizes) (type) with `--azure-instance-size` (default to `Standard_F8s_v2`).
+
+Example:
+
+```
+ubuntu-bartender \
+  --build-provider azure \
+  --azure-pubkey-path ~/.ssh/ubuntu.pub \
+  --azure-location "Germany West Central" \
+  \
+  --livecd-rootfs-branch ubuntu/focal \
+  -- \
+  --series focal \
+  --project ubuntu-cpc \
+  --subproject base \
+  --image-target kvm
 ```
 
 ## ARM builds
