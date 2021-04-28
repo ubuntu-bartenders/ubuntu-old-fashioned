@@ -111,7 +111,7 @@ MULTIPASS_MEM_SIZE=8G
 MULTIPASS_IMAGE=daily:b # daily image of bionic
 
 # AZURE SPECIFIC DEFAULTS
-AZURE_URN="Canonical:0001-com-ubuntu-pro-bionic:pro-18_04-lts:latest"
+AZURE_URN="Canonical:UbuntuServer:18_04-daily-lts-gen2:latest"
 AZURE_INSTANCE_SIZE="Standard_F8s_v2"
 AZURE_PUBKEY_PATH="$HOME/.ssh/$USER.pub"
 AZURE_LOCATION="France Central"
