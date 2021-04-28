@@ -187,17 +187,17 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --aws-arm-build                         Short hand switch for safe arm64 defaults
                                             This will override --aws-instance-type and --aws-ami-name-filter
 
-    --azure-urn                             Image URN
+    --azure-urn <urn>                       Image URN
                                             Value: $AZURE_URN
 
-    --azure-instance-size                   Azure instance size
+    --azure-instance-size <size>            Azure instance size
                                             Value: $AZURE_INSTANCE_SIZE
 
-    --azure-pubkey-path                     SSH key to use to create/authenticate to
+    --azure-pubkey-path <path>              SSH key to use to create/authenticate to
                                             Azure instances.
                                             Value: $AZURE_PUBKEY_PATH
 
-    --azure-location                        Location (region) where to create the instance
+    --azure-location <location>             Location (region) where to create the instance
                                             on Azure
                                             Value: $AZURE_LOCATION
 
