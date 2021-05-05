@@ -41,7 +41,7 @@ function build-provider-assert-ready {
 
 function build-provider-destroy {
   echo "Destroying group $1 on Azure..."
-  az group delete -y -g "$1" &> /dev/null
+  az group delete --no-wait -y -g "$1" &> /dev/null
 }
 
 function build-provider-create {
