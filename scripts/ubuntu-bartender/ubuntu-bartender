@@ -10,7 +10,7 @@
 
 # So sit back, relax, and let the Ubuntu Bartender do the work for you.
 
-# 1: https://github.com/chrisglass/ubuntu-old-fashioned
+# 1: https://github.com/ubuntu-bartenders/ubuntu-old-fashioned
 
 ############ Overview #########################################################
 
@@ -53,7 +53,7 @@ done
 
 # The Ubuntu Bartender needs to know the location of a few git repositories:
 
-UBUNTU_OLD_FASHIONED_REPO=${UBUNTU_OLD_FASHIONED_REPO:-https://github.com/chrisglass/ubuntu-old-fashioned.git}
+UBUNTU_OLD_FASHIONED_REPO=${UBUNTU_OLD_FASHIONED_REPO:-https://github.com/ubuntu-bartenders/ubuntu-old-fashioned.git}
 LIVECD_ROOTFS_REPO=${LIVECD_ROOTFS_REPO:-https://git.launchpad.net/livecd-rootfs}
 HOOK_EXTRAS_REPO=${HOOK_EXTRAS_REPO:-}
 HOOK_EXTRAS_DIR=${HOOK_EXTRAS_DIR:-}
