@@ -112,7 +112,7 @@ MULTIPASS_IMAGE=daily:b # daily image of bionic
 # By default, do not exceed half the total memory or 8GiB (whichever is smaller).
 # All calculations are in MiB
 TOTAL_MEM=$(free -m | grep -oP '\d+' | head -n 1)
-HALF_MEM="$(( ${TOTAL_MEM} / 2 ))"
+HALF_MEM="$(( $TOTAL_MEM / 2 ))"
 CAP_MEM=8192
 
 if [[ "$HALF_MEM" -lt "$CAP_MEM" ]]; then
