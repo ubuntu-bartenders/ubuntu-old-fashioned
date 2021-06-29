@@ -107,7 +107,12 @@ AWS_ARM_BUILD=false
 
 # MULTIPASS SPECIFIC DEFAULTS
 MULTIPASS_DISK_SIZE=50G
-MULTIPASS_MEM_SIZE=8G
+
+# By default, do not exceed half the total memory.
+TOTAL_MEM=$(free -m | grep -oP '\d+' | head -n 1)
+MULTIPASS_MEM_SIZE="$(( ${TOTAL_MEM} / 2 ))M"
+# MULTIPASS_MEM_SIZE=8G  # you can optionally override this
+
 MULTIPASS_IMAGE=daily:b # daily image of bionic
 
 # We also pull in explicitly set variables on the command line
