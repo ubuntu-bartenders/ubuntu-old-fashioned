@@ -113,7 +113,6 @@ MULTIPASS_IMAGE=daily:b # daily image of bionic
 # AZURE SPECIFIC DEFAULTS
 AZURE_URN="Canonical:UbuntuServer:18_04-daily-lts-gen2:latest"
 AZURE_INSTANCE_SIZE="Standard_F8s_v2"
-AZURE_PUBKEY_PATH="$HOME/.ssh/$USER.pub"
 AZURE_LOCATION="France Central"
 
 # We also pull in explicitly set variables on the command line
@@ -192,10 +191,6 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
 
     --azure-instance-size <size>            Azure instance size
                                             Value: $AZURE_INSTANCE_SIZE
-
-    --azure-pubkey-path <path>              SSH key to use to create/authenticate to
-                                            Azure instances.
-                                            Value: $AZURE_PUBKEY_PATH
 
     --azure-location <location>             Location (region) where to create the instance
                                             on Azure
@@ -307,10 +302,6 @@ do
       ;;
     --azure-instance-size)
       AZURE_INSTANCE_SIZE="$2"
-      shift
-      ;;
-    --azure-pubkey-path)
-      AZURE_PUBKEY_PATH="$2"
       shift
       ;;
     --azure-location)
