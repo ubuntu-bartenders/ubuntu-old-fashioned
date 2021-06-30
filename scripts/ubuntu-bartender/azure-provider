@@ -1,0 +1,80 @@
+function _wait-instance-connectable() {
+  for attempt in $(seq 12); do
+    if ! ssh $(set-key-opt) -qo StrictHostKeyChecking=no "ubuntu@$ip_addr" -- true; then
+      sleep 10
+    else
+      state=connectable
+      break
+    fi
+  done
+
+  if [ "$state" != "connectable" ]; then
+    echo "error: instance not 'connectable' after 2 minutes"
+    exit 255
+  fi
+}
+
+function build-provider-assert-ready {
+  if ! command -v az &>/dev/null
+  then
+    echo "error: azure-cli was not found in PATH" >&2
+    exit 255
+  fi
+
+  if ! az account show &>/dev/null
+  then
+    echo "error: azure-cli is not configured, run: az login" >&2
+    exit 255
+  fi
+
+  if ! command -v jq &>/dev/null
+  then
+    echo "error: jq was not found in PATH" >&2
+    exit 255
+  fi
+}
+
+function build-provider-destroy {
+  echo "Destroying group $1 on Azure..."
+  az group delete --no-wait -y -g "$1" &> /dev/null
+}
+
+function build-provider-create {
+  key_dir="$temp_dir/keys"
+  echo "Generating SSH key in $key_dir"
+  mkdir "$key_dir"
+  ssh-keygen -t rsa -f "$temp_dir/keys/ubuntu" -P '' &> /dev/null
+
+  echo "Creating $1 on Azure..."
+  az group create -l "$AZURE_LOCATION" -g "$1" &> /dev/null
+  ip_addr=$(az vm create --name "$1" \
+               --resource-group "$1" \
+               --image "$AZURE_URN" \
+               --size "$AZURE_INSTANCE_SIZE" \
+               --admin-username ubuntu \
+               --ssh-key-value "$key_dir/ubuntu.pub" 2> /dev/null |
+               jq -r '.publicIpAddress')
+  _wait-instance-connectable
+}
+
+function build-provider-upload {
+  scp $(set-key-opt) -qo StrictHostKeyChecking=no "$2" "ubuntu@$ip_addr:$3"
+}
+
+function build-provider-download {
+  scp $(set-key-opt) -qo StrictHostKeyChecking=no "ubuntu@$ip_addr:$2" "$3"
+}
+
+function build-provider-run {
+  args=$(echo -- $@ | sed 's/.*--//')
+  ssh $(set-key-opt) -qo StrictHostKeyChecking=no "ubuntu@$ip_addr" -- $args
+}
+
+function set-key-opt() {
+  export KEY_OPT=''
+  if [ -f "$temp_dir/keys/ubuntu" ]; then
+    KEY_OPT="-i $temp_dir/keys/ubuntu"
+  fi
+
+  echo ${KEY_OPT}
+}
