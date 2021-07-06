@@ -1,0 +1,135 @@
+function build-provider-assert-ready {
+  if ! command -v qemu-system-${QEMU_ARCH} &>/dev/null
+  then
+    echo "error: qemu-system-${QEMU_ARCH} was not found in PATH" >&2
+    exit 255
+  fi
+
+  if [ -n "$QEMU_IMAGE" ]; then
+    if [ ! -f "$QEMU_IMAGE" ]; then
+      echo "error: specified image not found at $QEMU_IMAGE"
+      exit 255
+    fi
+    virtual_size=$(qemu-img info --output=json "$QEMU_IMAGE" | jq '."virtual-size"')
+    if [ "$virtual_size" -lt 50000000000 ]; then
+      echo "error: qemu disk is too small, it should be at least 50GB large"
+      echo "Use 'qemu-img resize' to resize your disk"
+      exit 255
+    fi
+  fi
+}
+
+function build-provider-destroy {
+  kill "$(cat "$temp_dir/qemu.pid")" &> /dev/null
+}
+
+function build-provider-create {
+  image="$temp_dir/bionic-server-cloudimg.img"
+  user_data="$temp_dir/user_data.yaml"
+
+  key_dir="$temp_dir/keys"
+  echo "Generating SSH key in $key_dir"
+  mkdir "$key_dir"
+  ssh-keygen -t rsa -f "$temp_dir/keys/ubuntu" -P '' &> /dev/null
+
+  QEMU_EXTRA_OPTIONS="-smp $QEMU_CPU -m $CAP_MEM"
+
+  IMG_ARCH="${QEMU_ARCH}"
+  case "${QEMU_ARCH}" in
+    x86_64)
+      IMG_ARCH='amd64'
+      ;;
+    ppc64le)
+      IMG_ARCH='ppc64el'
+      ;;
+    aarch64)
+      IMG_ARCH='arm64'
+      # there is no default machine for arm64
+      QEMU_EXTRA_OPTIONS="$QEMU_EXTRA_OPTIONS -machine virt -cpu max"
+      # arm only supports uEFI boot
+      QEMU_EXTRA_OPTIONS="$QEMU_EXTRA_OPTIONS -bios /usr/share/qemu-efi-aarch64/QEMU_EFI.fd"
+      ;;
+esac
+
+  if [ "${QEMU_ARCH}" = "$(uname -p)" ] && lsmod | grep -q '^kvm '; then
+    QEMU_EXTRA_OPTIONS="$QEMU_EXTRA_OPTIONS -enable-kvm"
+  fi
+
+  if [ -z "$QEMU_IMAGE" ]; then
+    if ! wget -qO "$image" http://cloud-images.ubuntu.com/bionic/current/bionic-server-cloudimg-$IMG_ARCH.img; then
+      echo "error: could not find the bionic image for $IMG_ARCH on cloud-images.ubuntu.com"
+      cleanup
+      exit 255
+    fi
+
+    qemu-img resize "$image" +50G &> /dev/null
+  else
+    image="$QEMU_IMAGE"
+  fi
+
+  cat << EOF > "$user_data"
+#cloud-config
+
+ssh_authorized_keys:
+ - $(cat "$temp_dir/keys/ubuntu.pub")
+EOF
+
+  cloud-localds "$temp_dir/seed.img" "$user_data"
+
+  ssh_port=2222
+  qemu-system-${QEMU_ARCH} \
+    $QEMU_EXTRA_OPTIONS \
+    -pidfile "$temp_dir/qemu.pid" \
+    -nographic \
+    -snapshot \
+    -drive if=virtio,format=qcow2,file="${image}" \
+    -nic user,model=virtio,hostfwd=tcp::2222-:22 \
+    -drive if=virtio,format=raw,file="$temp_dir/seed.img" &> "$temp_dir/qemu.log" </dev/null &
+
+  sleep 5
+  echo "QEMU instance started, waiting for boot"
+  _wait-instance-connectable
+}
+
+function build-provider-upload {
+  scp $(set-key-opt) -P ${ssh_port} -qo StrictHostKeyChecking=no "$2" "ubuntu@0.0.0.0:$3"
+}
+
+function build-provider-download {
+  scp $(set-key-opt) -P ${ssh_port} -qo StrictHostKeyChecking=no "ubuntu@0.0.0.0:$2" "$3"
+}
+
+function build-provider-run {
+  args=$(echo -- $@ | sed 's/.*--//')
+  ssh $(set-key-opt) -p ${ssh_port} -qo StrictHostKeyChecking=no "ubuntu@0.0.0.0" -- $args
+}
+
+function set-key-opt() {
+  export KEY_OPT=''
+  if [ -f "$temp_dir/keys/ubuntu" ]; then
+    KEY_OPT="-i $temp_dir/keys/ubuntu"
+  fi
+
+  echo ${KEY_OPT}
+}
+
+function _wait-instance-connectable() {
+  for attempt in $(seq 12); do
+    if ! ssh $(set-key-opt) -p ${ssh_port} -qo StrictHostKeyChecking=no "ubuntu@0.0.0.0" -- true; then
+      if ! ps "$(cat "$temp_dir/qemu.pid")" &> /dev/null; then
+        echo "error: QEMU failed."
+        echo "$(cat "$temp_dir/qemu.log")"
+        exit 255
+      fi
+      sleep 10
+    else
+      state=connectable
+      break
+    fi
+  done
+
+  if [ "$state" != "connectable" ]; then
+    echo "error: instance not 'connectable' after 2 minutes"
+    exit 255
+  fi
+}

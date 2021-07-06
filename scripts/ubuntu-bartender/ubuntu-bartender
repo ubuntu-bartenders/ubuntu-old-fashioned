@@ -129,6 +129,11 @@ AZURE_URN="Canonical:UbuntuServer:18_04-daily-lts-gen2:latest"
 AZURE_INSTANCE_SIZE="Standard_F8s_v2"
 AZURE_LOCATION="France Central"
 
+# QEMU SPECIFIC DEFAULTS
+QEMU_ARCH="$(uname -p)"
+QEMU_CPU="$(($(nproc)/3))"
+QEMU_IMAGE=''
+
 # We also pull in explicitly set variables on the command line
 
 function print-usage {
@@ -209,6 +214,18 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --azure-location <location>             Location (region) where to create the instance
                                             on Azure
                                             Value: $AZURE_LOCATION
+
+    --qemu-cpu <cpu_count>                  Max number of core to pass to QEMU VM
+                                            Value: $QEMU_CPU
+
+    --qemu-arch <arch>                      CPU architecture of QEMU VM
+                                            Value: $QEMU_ARCH
+
+    --qemu-image <image_file>               Image file to use with QEMU.
+                                            It has to be a $QEMU_ARCH image.
+                                            By default, a fresh image will be dowloaded from
+                                            cloud-images.ubuntu.com
+                                            Value: $QEMU_IMAGE
 
     --temp-dir-loc                          Parent folder to build the temp dir used
                                             by bartender; note that this must be
@@ -322,6 +339,18 @@ do
       AZURE_LOCATION="$2"
       shift
       ;;
+    --qemu-cpu)
+      QEMU_CPU="$2"
+      shift
+      ;;
+    --qemu-arch)
+      QEMU_ARCH="$2"
+      shift
+      ;;
+    --qemu-image)
+      QEMU_IMAGE="$2"
+      shift
+      ;;
     --temp-dir-loc)
       TEMP_DIR_LOC="$2"
       shift
@@ -398,8 +427,8 @@ drink_name=${bartender_name/-bartender/-on-the-rocks.tar.gz}
 
 function cleanup {
   echo "Cleaning up..."
-  rm -rf $temp_dir
   build-provider-destroy $bartender_name
+  rm -rf $temp_dir
 }
 
 if [ "$SHOULD_CLEANUP" = "YES" ]
