@@ -5,6 +5,12 @@ function build-provider-assert-ready {
     exit 255
   fi
 
+  if ! command -v cloud-localds &>/dev/null; then
+    echo "error: cloud-image-utils not found. You can install it with:"
+    echo "sudo apt install -y cloud-image-utils"
+    exit 255
+  fi
+
   if [ -n "$QEMU_IMAGE" ]; then
     if [ ! -f "$QEMU_IMAGE" ]; then
       echo "error: specified image not found at $QEMU_IMAGE"
