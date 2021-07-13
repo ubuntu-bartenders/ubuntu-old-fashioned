@@ -1,3 +1,5 @@
+# Beginning of "public" methods used by ubuntu-bartender
+
 function build-provider-assert-ready {
   if ! command -v qemu-system-${QEMU_ARCH} &>/dev/null
   then
@@ -11,14 +13,16 @@ function build-provider-assert-ready {
     exit 255
   fi
 
+  _set_disk_size
+
   if [ -n "$QEMU_IMAGE" ]; then
     if [ ! -f "$QEMU_IMAGE" ]; then
       echo "error: specified image not found at $QEMU_IMAGE"
       exit 255
     fi
     virtual_size=$(qemu-img info --output=json "$QEMU_IMAGE" | jq '."virtual-size"')
-    if [ "$virtual_size" -lt 50000000000 ]; then
-      echo "error: qemu disk is too small, it should be at least 50GB large"
+    if [ "$virtual_size" -lt "$QEMU_IMAG_SIZE" ]; then
+      echo "error: qemu disk is too small, it should be at least $(echo $QEMU_IMAG_SIZE | numfmt --to=iec-i) large"
       echo "Use 'qemu-img resize' to resize your disk"
       exit 255
     fi
@@ -68,7 +72,7 @@ esac
       exit 255
     fi
 
-    qemu-img resize "$image" +50G &> /dev/null
+    qemu-img resize "$image" "$QEMU_IMG_SIZE" &> /dev/null
   else
     image="$QEMU_IMAGE"
   fi
@@ -82,14 +86,14 @@ EOF
 
   cloud-localds "$temp_dir/seed.img" "$user_data"
 
-  ssh_port=2222
+  ssh_port=$(_get_ssh_port)
   qemu-system-${QEMU_ARCH} \
     $QEMU_EXTRA_OPTIONS \
     -pidfile "$temp_dir/qemu.pid" \
     -nographic \
     -snapshot \
     -drive if=virtio,format=qcow2,file="${image}" \
-    -nic user,model=virtio,hostfwd=tcp::2222-:22 \
+    -nic user,model=virtio,hostfwd="tcp::${ssh_port}-:22" \
     -drive if=virtio,format=raw,file="$temp_dir/seed.img" &> "$temp_dir/qemu.log" </dev/null &
 
   sleep 5
@@ -110,21 +114,14 @@ function build-provider-run {
   ssh $(set-key-opt) -p ${ssh_port} -qo StrictHostKeyChecking=no "ubuntu@0.0.0.0" -- $args
 }
 
-function set-key-opt() {
-  export KEY_OPT=''
-  if [ -f "$temp_dir/keys/ubuntu" ]; then
-    KEY_OPT="-i $temp_dir/keys/ubuntu"
-  fi
+# Beginning of "private" helpers used by the previous methods
 
-  echo ${KEY_OPT}
-}
-
-function _wait-instance-connectable() {
+function _wait-instance-connectable {
   for attempt in $(seq 12); do
     if ! ssh $(set-key-opt) -p ${ssh_port} -qo StrictHostKeyChecking=no "ubuntu@0.0.0.0" -- true; then
       if ! ps "$(cat "$temp_dir/qemu.pid")" &> /dev/null; then
         echo "error: QEMU failed."
-        echo "$(cat "$temp_dir/qemu.log")"
+        cat "$temp_dir/qemu.log"
         exit 255
       fi
       sleep 10
@@ -138,4 +135,44 @@ function _wait-instance-connectable() {
     echo "error: instance not 'connectable' after 2 minutes"
     exit 255
   fi
+}
+
+# _set_disk_size compute the disk space to use and store it in QEMU_IMG_SIZE
+function _set_disk_size {
+  available=$(df --output=avail "$TEMP_DIR_LOC" | tail -n1)
+  if [ "$available" -lt 25000000 ]; then
+    echo "Low space detected on drive ($(echo $available | numfmt --to=iec-i)). please consider using a cloud provider like Azure or AWS"
+    exit 1
+  elif [ "$available" -lt 60000000 ]; then
+    echo "less than optimal space found. Be aware that on large builds, this may reach capacity."
+    QEMU_IMG_SIZE="$(( 1000*available/2 ))"
+    return
+  fi
+
+  QEMU_IMG_SIZE='30000000000'
+}
+
+# _get_ssh_port returns the first un-used TCP port between 2222 and 2300
+function _get_ssh_port {
+  port=2222
+  while [ "$port" -lt 2300 ]; do
+    if [ -z "$(ss -Hnlt "( sport = :$port )")" ]; then
+      echo "$port"
+      return
+    fi
+    port=$(( port+1 ))
+  done
+
+  echo "error: no port available for SSH in 2222-2300"
+  echo "There is an issue with your system"
+  exit 1
+}
+
+function set-key-opt {
+  export KEY_OPT=''
+  if [ -f "$temp_dir/keys/ubuntu" ]; then
+    KEY_OPT="-i $temp_dir/keys/ubuntu"
+  fi
+
+  echo ${KEY_OPT}
 }
