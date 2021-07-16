@@ -154,6 +154,28 @@ ubuntu-bartender \
   --image-target kvm
 ```
 
+#### QEMU provider
+
+The QEMU provider can (in theory) build any architecture supported by QEMU. In practice, only small set of those have been tested: `x86_64`, `i386`, `aarch64`, `s309x`, `ppc64le`.
+
+Example, build Focal `s309x` with the QEMU provider:
+
+```
+ubuntu-bartender \
+    --build-provider qemu \
+    --qemu-arch s309x \
+    -- \
+    --image-format ext4 \
+    --series focal \
+    --image-target qcow2
+```
+
+Because `ubuntu-old-fashioned` expects a Bionic host, this provider will first download the latest Bionic image for the target architecture from [cloud-images.ubuntu.com](https://cloud-images.ubuntu.com/bionic/current/). To speed up the build process and avoid re-downloading the Bionic image on each run, the user can provide its own Bionic image via `--qemu-image <image_file>`. In this case, the user should make sure to provide the corresponding image of the right architecture.
+
+The QEMU provider will automatically detect if it can use KVM acceleration. For example, when running `--qemu-arch x86_64` on an `x86_64` machine with the `kvm` module loaded, QEMU will run using KVM acceleration.
+
+If not specified, the default target architecture is the host machine's architecture (`uname -p`).
+
 ## ARM builds
 ARM is growing in support, and there is demand for builds. However, most of us do not have an ARM based daily driver for development. Thankfully, AWS to the rescue
 
@@ -165,6 +187,8 @@ use an arm instance type (`AWS_INSTANCE_TYPE="m6g.large"`). This option is meant
 
 Know that setting `--aws-ami-name-filter` and `--aws-instance-type` **and** `--aws-arm-build` will result in the `--aws-arm-build` defaults being used, **not** your passed in values.
 If you want to set specifics, please use `--aws-ami-name-filter` and `--aws-instance-type` directly.
+
+You can also build ARM with the QEMU provider (see above).
 
 ## More questions?
 
