@@ -174,7 +174,7 @@ mkdir -p $OLD_FASHIONED_BUILD_CACHE
 if ! [ -f $CHROOT_ARCHIVE ] || [ $USE_CHROOT_CACHE = false ] ; then
     echo "Downloading chroot filesystem from launchpad."
     rm -rf $UAT_CHECKOUT
-    bzr export $UAT_CHECKOUT lp:~ubuntu-archive/ubuntu-archive-tools/trunk
+    git clone https://git.launchpad.net/ubuntu-archive-tools $UAT_CHECKOUT
     $UAT_CHECKOUT/manage-chroot -a ${ARCH} -s $SERIES info
     $UAT_CHECKOUT/manage-chroot -a ${ARCH} -s $SERIES -f $CHROOT_ARCHIVE get
 else
