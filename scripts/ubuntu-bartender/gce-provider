@@ -1,0 +1,79 @@
+function _wait-instance-connectable() {
+  for attempt in $(seq 12); do
+    if ! ssh $(set-key-opt) "ubuntu@$ip_addr" -- true; then
+      sleep 10
+    else
+      state=connectable
+      break
+    fi
+  done
+
+  if [ "$state" != "connectable" ]; then
+    echo "error: instance not 'connectable' after 2 minutes"
+    exit 255
+  fi
+}
+function build-provider-assert-ready {
+  if ! command -v gcloud &>/dev/null
+  then
+    echo "error: gcloud was not found in PATH" >&2
+    exit 255
+  fi
+
+  active_account=$(gcloud auth list --filter='status:ACTIVE' --format='csv[no-heading](account)' 2>/dev/null)
+  if [ -z "$active_account" ]
+  then
+    echo "error: gcloud is not configured, run: gcloud auth login" >&2
+    exit 255
+  fi
+}
+
+function build-provider-destroy {
+  echo "Destroying instance $1 on GCE..."
+  gcloud compute instances delete "$1" --zone="$GCE_ZONE" --delete-disks=all --quiet
+}
+
+function build-provider-create {
+  key_dir="$temp_dir/keys"
+  echo "Generating SSH key in $key_dir"
+  mkdir "$key_dir"
+
+  ssh-keygen -t rsa -f "$temp_dir/keys/ubuntu" -P '' -C 'ubuntu@bartender' &> /dev/null
+  printf "ubuntu:%s" "$(cat $temp_dir/keys/ubuntu.pub)" > "$temp_dir/keys/metadata"
+
+  echo "Creating $1 on GCE..."
+  ip_addr=$(gcloud compute instances create "$1" \
+     --image-family ubuntu-1804-lts \
+     --image-project ubuntu-os-cloud \
+     --metadata-from-file=ssh-keys="$temp_dir/keys/metadata" \
+     --boot-disk-size=50GB \
+     --boot-disk-type=pd-ssd \
+     --machine-type="$GCE_MACHINE_TYPE" \
+     --zone="$GCE_ZONE" \
+     --format='csv[no-heading](EXTERNAL_IP)'
+  )
+
+  _wait-instance-connectable
+}
+
+function build-provider-upload {
+  scp $(set-key-opt) "$2" "ubuntu@$ip_addr:$3"
+}
+
+function build-provider-download {
+  scp $(set-key-opt) "ubuntu@$ip_addr:$2" "$3"
+}
+
+function build-provider-run {
+  args=$(echo -- "$@" | sed 's/.*--//')
+  ssh $(set-key-opt) "ubuntu@$ip_addr" -- $args
+}
+
+function set-key-opt() {
+  export KEY_OPT='-qo StrictHostKeyChecking=no'
+  if [ -f "$temp_dir/keys/ubuntu" ]; then
+    KEY_OPT="$KEY_OPT -i $temp_dir/keys/ubuntu"
+  fi
+
+  echo "$KEY_OPT"
+}

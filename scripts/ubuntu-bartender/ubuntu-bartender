@@ -129,6 +129,10 @@ AZURE_URN="Canonical:UbuntuServer:18_04-daily-lts-gen2:latest"
 AZURE_INSTANCE_SIZE="Standard_F8s_v2"
 AZURE_LOCATION="France Central"
 
+# GCE SPECIFIC DEFAULTS
+GCE_MACHINE_TYPE="n2-standard-2"
+GCE_ZONE="europe-west3-a"
+
 # We also pull in explicitly set variables on the command line
 
 function print-usage {
@@ -209,6 +213,12 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --azure-location <location>             Location (region) where to create the instance
                                             on Azure
                                             Value: $AZURE_LOCATION
+
+    --gce-machine-type <machine-type>       GCE instance machine type
+                                            Value: $GCE_MACHINE_TYPE
+
+    --gce-zone <zone>                       Zone in which to create the GCE instance
+                                            Value: $GCE_ZONE
 
     --temp-dir-loc                          Parent folder to build the temp dir used
                                             by bartender; note that this must be
@@ -320,6 +330,14 @@ do
       ;;
     --azure-location)
       AZURE_LOCATION="$2"
+      shift
+      ;;
+    --gce-machine-type)
+      GCE_MACHINE_TYPE="$2"
+      shift
+      ;;
+    --gce-zone)
+      GCE_ZONE="$2"
       shift
       ;;
     --temp-dir-loc)
