@@ -411,7 +411,7 @@ fi
 # Let's build all the things!
 
 temp_dir=$(mktemp --tmpdir="$TEMP_DIR_LOC" --directory ubuntu-bartender-multipass.XXXXXXXXXX)
-bartender_name=$(petname)-ubuntu-bartender
+bartender_name=$(date '+%Y%m%d-%H%M')-$(petname)-ubuntu-bartender
 drink_name=${bartender_name/-bartender/-on-the-rocks.tar.gz}
 
 function cleanup {
