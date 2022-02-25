@@ -26,7 +26,7 @@ Absolutely. Here's an incomplete, high-level overview of the components
 of an Ubuntu image build with Ubuntu Bartender:
 
 #### [Ubuntu Bartender][3]
-- Manages the lifecycle of a bionic VM in which the image build is run
+- Manages the lifecycle of a VM in which the image build is run
 - Collects the dependencies of an Ubuntu Old Fashioned image build
 - Runs an Ubuntu Old Fashioned image build
 - Downloads any artifacts produced by the build
@@ -106,7 +106,7 @@ ubuntu-bartender --help
 
 ## You mentioned an example specifying different build providers. Why does that matter?
 
-The Ubuntu image build happens in a LXD container within a bionic VM. Ubuntu Bartender can manage the lifecycle of that VM, which can run in either [Multipass][7] or [AWS][8].
+The Ubuntu image build happens in a LXD container within an Ubuntu VM. Ubuntu Bartender can manage the lifecycle of that VM, which can run in either [Multipass][7] or [AWS][8].
 
 Multipass is more convenient - all of your VMs run locally and it's free.
 
@@ -160,7 +160,7 @@ ARM is growing in support, and there is demand for builds. However, most of us d
 There is a quick option for calling up ARM defaults for aws, `--aws-arm-build` (AWS_ARM_BUILD). This is a boolean style flag, so via the cli, passing the flag is sufficient
 For configuration in file or env_var, please use true or false (literal strings). The only truthy value is the literal string "true". 
 
-This will run a build searching for an ARM based ami (`AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-arm64-server-*"`) and 
+This will run a build searching for an ARM based ami (`AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-focal-daily-arm64-server-*"`) and 
 use an arm instance type (`AWS_INSTANCE_TYPE="m6g.large"`). This option is meant as a quick flag so you don't need to look up filter name or instance types.
 
 Know that setting `--aws-ami-name-filter` and `--aws-instance-type` **and** `--aws-arm-build` will result in the `--aws-arm-build` defaults being used, **not** your passed in values.

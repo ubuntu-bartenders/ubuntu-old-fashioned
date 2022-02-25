@@ -97,7 +97,6 @@ fi
 # Please preface each provider default with the provider name
 
 # AWS SPECIFIC DEFAULTS
-AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-amd64-server-*"
 AWS_PROFILE="default"
 AWS_INSTANCE_TYPE="m5.large"
 # Official Canonical OwnerId
@@ -105,9 +104,10 @@ AWS_AMI_OWNER=099720109477
 AWS_KEYPAIR_NAME=$USER
 AWS_ARM_BUILD=false
 
+
 # MULTIPASS SPECIFIC DEFAULTS
 MULTIPASS_DISK_SIZE=50G
-MULTIPASS_IMAGE=daily:b # daily image of bionic
+MULTIPASS_IMAGE=daily:f # daily image of bionic
 # you can optionally override memory cap by setting MULTIPASS_MEM_SIZE
 
 # By default, do not exceed half the total memory or 8GiB (whichever is smaller).
@@ -125,13 +125,14 @@ fi
 MULTIPASS_MEM_SIZE=${MULTIPASS_MEM_SIZE:-$MULTIPASS_MEM_SIZE_DEFAULT}
 
 # AZURE SPECIFIC DEFAULTS
-AZURE_URN="Canonical:UbuntuServer:18_04-daily-lts-gen2:latest"
+AZURE_URN="Canonical:0001-com-ubuntu-server-focal-daily:20_04-daily-lts-gen2:latest"
 AZURE_INSTANCE_SIZE="Standard_F8s_v2"
 AZURE_LOCATION="France Central"
 
 # GCE SPECIFIC DEFAULTS
 GCE_MACHINE_TYPE="n2-standard-2"
 GCE_ZONE="europe-west3-a"
+GCE_IMAGE="ubuntu-2004-lts"
 
 # We also pull in explicitly set variables on the command line
 
@@ -178,10 +179,9 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             Value: Cleanup? $SHOULD_CLEANUP
 
     --aws-ami-name-filter <image-name>      Filter for finding an AWS ami by name
-                                            defaults to Bionic AMD64. This is
-                                            the base for the builds. for ARM:
-                                            ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-arm64-server-*
-                                            Value: $AWS_AMI_NAME_FILTER
+                                            defaults to Focal AMD64. This is
+                                            the base for the builds. 
+                                            Value: ubuntu/images-testing/hvm-ssd/ubuntu-focal-daily-${ARCH}-server-*
 
     --aws-profile <profile>                 AWS profile used with the aws cli
                                             Value: $AWS_PROFILE
@@ -219,6 +219,9 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
 
     --gce-zone <zone>                       Zone in which to create the GCE instance
                                             Value: $GCE_ZONE
+    
+    --gce-image <image>                     GCE Image to use
+                                            VALUE: $GCE_IMAGE
 
     --temp-dir-loc                          Parent folder to build the temp dir used
                                             by bartender; note that this must be
@@ -340,6 +343,10 @@ do
       GCE_ZONE="$2"
       shift
       ;;
+    --gce-image)
+      GCE_IMAGE="$2"
+      shift
+      ;;
     --temp-dir-loc)
       TEMP_DIR_LOC="$2"
       shift
@@ -378,9 +385,13 @@ fi
 if [ "$AWS_ARM_BUILD" = "true" ]
 then
   AWS_INSTANCE_TYPE="m6g.large"
-  AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-arm64-server-*"
+  AWS_ARCH="arm64"
   BUILD_PROVIDER="aws"
+else
+  AWS_ARCH="amd64"
 fi
+
+AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-focal-daily-${AWS_ARCH}-server-*"
 
 # Verify that the specified build provider is available and ready
 
