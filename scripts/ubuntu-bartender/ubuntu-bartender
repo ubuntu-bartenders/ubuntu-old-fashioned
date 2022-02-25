@@ -103,7 +103,6 @@ fi
 # Please preface each provider default with the provider name
 
 # AWS SPECIFIC DEFAULTS
-AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-amd64-server-*"
 AWS_PROFILE="default"
 AWS_INSTANCE_TYPE="m5.large"
 # Official Canonical OwnerId
@@ -113,7 +112,7 @@ AWS_ARM_BUILD=false
 
 # MULTIPASS SPECIFIC DEFAULTS
 MULTIPASS_DISK_SIZE=50G
-MULTIPASS_IMAGE=daily:b # daily image of bionic
+MULTIPASS_IMAGE=daily:f # daily image of focal
 # you can optionally override memory cap by setting MULTIPASS_MEM_SIZE
 
 # By default, do not exceed half the total memory or 8GiB (whichever is smaller).
@@ -131,13 +130,13 @@ fi
 MULTIPASS_MEM_SIZE=${MULTIPASS_MEM_SIZE:-$MULTIPASS_MEM_SIZE_DEFAULT}
 
 # AZURE SPECIFIC DEFAULTS
-AZURE_URN="Canonical:UbuntuServer:18_04-daily-lts-gen2:latest"
+AZURE_URN="Canonical:0001-com-ubuntu-server-focal-daily:20_04-daily-lts-gen2:latest"
 AZURE_INSTANCE_SIZE="Standard_F8s_v2"
 AZURE_LOCATION="France Central"
 
 # GCE SPECIFIC DEFAULTS
 GCE_ARM_BUILD=false
-GCE_IMAGE_FAMILY="ubuntu-1804-lts"
+GCE_IMAGE_FAMILY="ubuntu-2004-lts"
 GCE_MACHINE_TYPE="n2-standard-2"
 GCE_ZONE="us-central1-a" # Low CO2 region with both ARM64 and AMD64 instances available
 
@@ -202,10 +201,9 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             Value: Cleanup? $SHOULD_CLEANUP
 
     --aws-ami-name-filter <image-name>      Filter for finding an AWS ami by name
-                                            defaults to Bionic AMD64. This is
-                                            the base for the builds. for ARM:
-                                            ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-arm64-server-*
-                                            Value: $AWS_AMI_NAME_FILTER
+                                            defaults to Focal AMD64. This is
+                                            the base for the builds. 
+                                            Value: ubuntu/images-testing/hvm-ssd/ubuntu-focal-daily-${ARCH}-server-*
 
     --aws-profile <profile>                 AWS profile used with the aws cli
                                             Value: $AWS_PROFILE
@@ -436,19 +434,22 @@ fi
 if [ "$AWS_ARM_BUILD" = "true" ]
 then
   AWS_INSTANCE_TYPE="m6g.large"
-  AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-arm64-server-*"
+  AWS_ARCH="arm64"
   BUILD_PROVIDER="aws"
+else
+  AWS_ARCH="amd64"
 fi
 
 # if --gce-arm-build is provided,
 # setup the new GCE defaults.
 if [ "$GCE_ARM_BUILD" = "true" ]
 then
-  GCE_IMAGE_FAMILY="ubuntu-1804-lts-arm64"
+  GCE_IMAGE_FAMILY="ubuntu-2004-lts-arm64"
   GCE_MACHINE_TYPE="t2a-standard-2"
   BUILD_PROVIDER="gce"
 fi
 
+AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-focal-daily-${AWS_ARCH}-server-*"
 
 # Verify that the specified build provider is available and ready
 
