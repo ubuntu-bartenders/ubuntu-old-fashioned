@@ -1,5 +1,12 @@
+function az_cleanup {
+  echo "Cleaning up..."
+  rm -rf $temp_dir
+  build-provider-destroy $bartender_name
+}
+
 function _wait-instance-connectable() {
-  for attempt in $(seq 12); do
+  # wait for the VM to be running before checking SSH
+  for attempt in $(seq 6); do
     if ! ssh $(set-key-opt) -qo StrictHostKeyChecking=no "ubuntu@$ip_addr" -- true; then
       sleep 10
     else
@@ -40,6 +47,7 @@ function build-provider-destroy {
 }
 
 function build-provider-create {
+  trap "az_cleanup" EXIT
   key_dir="$temp_dir/keys"
   echo "Generating SSH key in $key_dir"
   mkdir "$key_dir"
@@ -48,20 +56,7 @@ function build-provider-create {
   echo "Creating $1 Resource Group and VM on Azure..."
   az group create -l "$AZURE_LOCATION" -g "$1" &> /dev/null
   # there can be a lag in resource group creation, which leads to VMs never getting made
-  for attempt in $(seq 6); do
-    rg_state=requested
-    rg_exists=$(az group exists --name "$1")
-    if [ rg_exists = "false" ]; then
-      sleep 10
-    else
-      rg_state=created
-      break
-    fi
-  done
-  if [ $rg_state  != "created" ]; then
-    echo "failed to create resource group $1"
-    exit 255
-  fi
+  az group wait --created --timeout 600 --interval 10 --name $1
   ip_addr=$(az vm create --name "$1" \
                --resource-group "$1" \
                --image "$AZURE_URN" \
@@ -69,6 +64,14 @@ function build-provider-create {
                --admin-username ubuntu \
                --ssh-key-value "$key_dir/ubuntu.pub" 2> /dev/null |
                jq -r '.publicIpAddress')
+  # wait for VM running before checking instance connection
+  echo "Waiting for VM creation and connectability to $1"
+  az vm wait --resource-group $1 --name $1 --custom "instanceView.statuses[?code=='PowerState/running']" --timeout 300 --interval 10
+  # sometimes the az vm create command can return without a public IP up yet
+  if [ -z $ip_addr ]; then
+    ip_addr=$(az vm list-ip-addresses --name $1 --resource-group $1 --query "[].virtualMachine.network.publicIpAddresses[0].ipAddress[0]" --output tsv)
+  fi
+  echo $ip_addr
   _wait-instance-connectable
 }
 

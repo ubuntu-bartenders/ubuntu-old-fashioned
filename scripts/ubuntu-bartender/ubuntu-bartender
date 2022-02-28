@@ -107,7 +107,7 @@ AWS_ARM_BUILD=false
 
 # MULTIPASS SPECIFIC DEFAULTS
 MULTIPASS_DISK_SIZE=50G
-MULTIPASS_IMAGE=daily:f # daily image of bionic
+MULTIPASS_IMAGE=daily:focal
 # you can optionally override memory cap by setting MULTIPASS_MEM_SIZE
 
 # By default, do not exceed half the total memory or 8GiB (whichever is smaller).
