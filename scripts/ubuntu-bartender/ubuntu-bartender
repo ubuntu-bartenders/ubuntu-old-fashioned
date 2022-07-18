@@ -132,7 +132,7 @@ AZURE_LOCATION="France Central"
 # GCE SPECIFIC DEFAULTS
 GCE_MACHINE_TYPE="n2-standard-2"
 GCE_ZONE="europe-west3-a"
-GCE_IMAGE="ubuntu-2004-lts"
+GCE_IMAGE_FAMILY="ubuntu-2004-lts"
 
 # We also pull in explicitly set variables on the command line
 
@@ -220,8 +220,8 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --gce-zone <zone>                       Zone in which to create the GCE instance
                                             Value: $GCE_ZONE
     
-    --gce-image <image>                     GCE Image to use
-                                            VALUE: $GCE_IMAGE
+    --gce-image-family <image>              GCE Image Famiy to use
+                                            VALUE: $GCE_IMAGE_FAMILY
 
     --temp-dir-loc                          Parent folder to build the temp dir used
                                             by bartender; note that this must be
@@ -344,7 +344,7 @@ do
       shift
       ;;
     --gce-image)
-      GCE_IMAGE="$2"
+      GCE_IMAGE_FAMILY="$2"
       shift
       ;;
     --temp-dir-loc)
