@@ -432,6 +432,8 @@ build-provider-create $bartender_name
 
   if [ -n "$HOOK_EXTRAS_DIR" ]
   then
+    echo "Removing package.build from local cpc_packaging.extra..." >&2
+    rm -rf "$HOOK_EXTRAS_DIR"/package.build
     cp -aR "$HOOK_EXTRAS_DIR" $temp_dir/extras
   fi
 
