@@ -13,7 +13,12 @@ import os
 
 from subprocess import call, PIPE, run
 
-import platform
+try:
+    import distro
+    DISTRO_VERSION = (distro.name(), distro.version(), distro.codename())
+except ImportError:
+    import platform
+    DISTRO_VERSION = platform.linux_distribution()
 from typing import Dict, List, Text, Tuple  # noqa
 
 PKG_INSTALL_CMDS = [
@@ -93,8 +98,7 @@ def ubuntu_distro_info(options):
 
 
 if __name__ == '__main__':
-    version = platform.linux_distribution()
-    if '18.04' not in version and '16.04' not in version:
+    if '18.04' not in DISTRO_VERSION and '16.04' not in DISTRO_VERSION:
         print("Old-fashioned must be run on Bionic or Xenial Ubuntu.")
         exit(1)
 
