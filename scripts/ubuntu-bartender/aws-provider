@@ -70,7 +70,7 @@ function build-provider-destroy {
 }
 
 function build-provider-create {
-  echo "Creating $1 on AWS..."
+  echo "Creating $1 on AWS... with profile ${AWS_PROFILE} in region ${region} using ${AWS_KEYPAIR_NAME} keypair"
   instance_id=$(aws --output json --region "$region" \
                     --profile "$AWS_PROFILE" \
                     ec2 run-instances \
