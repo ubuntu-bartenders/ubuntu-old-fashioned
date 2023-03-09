@@ -43,7 +43,7 @@ function build-provider-create {
 
   echo "Creating $1 on GCE..."
   ip_addr=$(gcloud compute instances create "$1" \
-     --image-family ubuntu-1804-lts \
+     --image-family="$GCE_IMAGE_FAMILY" \
      --image-project ubuntu-os-cloud \
      --metadata-from-file=ssh-keys="$temp_dir/keys/metadata" \
      --boot-disk-size=50GB \

@@ -136,8 +136,10 @@ AZURE_INSTANCE_SIZE="Standard_F8s_v2"
 AZURE_LOCATION="France Central"
 
 # GCE SPECIFIC DEFAULTS
+GCE_ARM_BUILD=false
+GCE_IMAGE_FAMILY="ubuntu-1804-lts"
 GCE_MACHINE_TYPE="n2-standard-2"
-GCE_ZONE="europe-west3-a"
+GCE_ZONE="us-central1-a" # Low CO2 region with both ARM64 and AMD64 instances available
 
 # We also pull in explicitly set variables on the command line
 
@@ -192,7 +194,7 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             Value: ${CHROOT_ARCHIVE:-None}
 
     --build-provider <provider>             The provider used to build the image.
-                                            This can be either multipass or aws.
+                                            This can be multipass, aws, azure or gce.
                                             Value: $BUILD_PROVIDER
 
     --no-cleanup                            Don't tear down the build provider
@@ -236,11 +238,18 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             on Azure
                                             Value: $AZURE_LOCATION
 
-    --gce-machine-type <machine-type>       GCE instance machine type
+    --gce-machine-type <machine-type>       GCE instance machine type, defaults to n2-standard-2
                                             Value: $GCE_MACHINE_TYPE
 
-    --gce-zone <zone>                       Zone in which to create the GCE instance
+    --gce-zone <zone>                       Zone in which to create the GCE instance,
+                                            defaults to us-central1-a
                                             Value: $GCE_ZONE
+
+    --gce-family <image-family>             Defaults to bionic amd64 (ubuntu-1804-lts).
+                                            Value: $GCE_IMAGE_FAMILY
+
+    --gce-arm-build                         Short hand switch for safe arm64 defaults in GCE
+                                            (This overrides both --gce-machine-type *and* --gce-image-family)
 
     --temp-dir-loc                          Parent folder to build the temp dir used
                                             by bartender; note that this must be
@@ -382,6 +391,13 @@ do
       GCE_ZONE="$2"
       shift
       ;;
+    --gce-family)
+      GCE_IMAGE_FAMILY="$2"
+      shift
+      ;;
+    --gce-arm-build)
+      GCE_ARM_BUILD=true
+      ;;
     --temp-dir-loc)
       TEMP_DIR_LOC="$2"
       shift
@@ -423,6 +439,16 @@ then
   AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-arm64-server-*"
   BUILD_PROVIDER="aws"
 fi
+
+# if --gce-arm-build is provided,
+# setup the new GCE defaults.
+if [ "$GCE_ARM_BUILD" = "true" ]
+then
+  GCE_IMAGE_FAMILY="ubuntu-1804-lts-arm64"
+  GCE_MACHINE_TYPE="t2a-standard-2"
+  BUILD_PROVIDER="gce"
+fi
+
 
 # Verify that the specified build provider is available and ready
 
