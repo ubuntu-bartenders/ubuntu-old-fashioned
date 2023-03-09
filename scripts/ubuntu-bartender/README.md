@@ -62,6 +62,7 @@ Where do you want the VM to run? You can specify:
 ```
 ubuntu-bartender --build-provider aws # build on a remote AWS instance
 ubuntu-bartender --build-provider azure # build on a remote Azure instance
+ubuntu-bartender --build-provider gce # build on a remote GCE instance
 ubuntu-bartender --build-provider multipass # build with a local multipass instance
 ```
 
@@ -154,17 +155,44 @@ ubuntu-bartender \
   --image-target kvm
 ```
 
-## ARM builds
-ARM is growing in support, and there is demand for builds. However, most of us do not have an ARM based daily driver for development. Thankfully, AWS to the rescue
+#### GCE
 
-There is a quick option for calling up ARM defaults for aws, `--aws-arm-build` (AWS_ARM_BUILD). This is a boolean style flag, so via the cli, passing the flag is sufficient
+To build on GCE, please specify `--build-provider gce`. You will need `gcloud` installed locally and set up with
+`gcloud init` (see https://cloud.google.com/sdk/gcloud/reference/init for instructions if unsure)
+
+Example:
+```
+ ubuntu-bartender \
+ --build-provider gce \
+ --gce-zone europe-west2-a \
+ --gce-machine-type n2-standard-8 \
+ --hook-extras-dir "/path/to/extra/hooks/dir" \
+ --livecd-rootfs-branch ubuntu/jammy \
+ -- \
+ --series jammy \
+ --project ubuntu-cpc \
+ --subproject base \
+ --image-target gce
+```
+
+## ARM builds
+ARM is growing in support, and there is demand for builds. However, most of us do not have an ARM based daily driver for development. Thankfully, AWS and GCE have come to the rescue!
+
+There is a quick option for calling up ARM defaults for aws, `--aws-arm-build` (AWS_ARM_BUILD) and GCE `--gce-arm-build` (GCE_ARM_BUILD).
+This is a boolean style flag, so via the cli, passing the flag is sufficient . 
 For configuration in file or env_var, please use true or false (literal strings). The only truthy value is the literal string "true". 
 
+### AWS ARM builds
 This will run a build searching for an ARM based ami (`AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-bionic-daily-arm64-server-*"`) and 
 use an arm instance type (`AWS_INSTANCE_TYPE="m6g.large"`). This option is meant as a quick flag so you don't need to look up filter name or instance types.
 
 Know that setting `--aws-ami-name-filter` and `--aws-instance-type` **and** `--aws-arm-build` will result in the `--aws-arm-build` defaults being used, **not** your passed in values.
 If you want to set specifics, please use `--aws-ami-name-filter` and `--aws-instance-type` directly.
+
+### GCE ARM builds
+This sets `GCE_IMAGE_FAMILY="ubuntu-1804-lts-arm64"` and `GCE_MACHINE_TYPE="t2a-standard-2"`, and will override **any**
+passed in values for both. If you need to set specifics, please pass in `--gce-family` and `--gce-machine-type` directly and omit
+`--gce-arm-build` instead.
 
 ## More questions?
 
@@ -178,3 +206,4 @@ Feel free to open an issue and we can add more to the README.
 [6]: https://launchpad.net/livecd-rootfs
 [7]: https://multipass.run/
 [8]: https://aws.amazon.com/
+[9]: https://console.cloud.google.com/
