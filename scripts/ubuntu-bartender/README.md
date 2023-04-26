@@ -137,14 +137,13 @@ MULTIPASS_IMAGE=multipass_image
 
 #### Azure
 
-To build on Azure, specify `--build-provider azure`. You will also need to provide a [location](https://azure.microsoft.com/en-us/global-infrastructure/geographies/) (region) via `--azure-location` (default to `France Central`); a public SSH key for connecting to the VM (via `--azure-pubkey-path`, default to `$HOME/.ssh/$USER.pub`). Finally you can provide a custom image "URN" (via `--azure-urn`, just use the default if you don't know what you do) and the Azure instance [size](https://docs.microsoft.com/en-us/azure/virtual-machines/sizes) (type) with `--azure-instance-size` (default to `Standard_F8s_v2`).
+To build on Azure, specify `--build-provider azure`. You will also need to provide a [location](https://azure.microsoft.com/en-us/global-infrastructure/geographies/) (region) via `--azure-location` (defaults to `France Central`). Finally you can provide a custom image "URN" (via `--azure-urn`, just use the default if you don't know what to do) and the Azure instance [size](https://docs.microsoft.com/en-us/azure/virtual-machines/sizes) (type) with `--azure-instance-size` (default to `Standard_F8s_v2`).
 
 Example:
 
 ```
 ubuntu-bartender \
   --build-provider azure \
-  --azure-pubkey-path ~/.ssh/ubuntu.pub \
   --azure-location "Germany West Central" \
   \
   --livecd-rootfs-branch ubuntu/focal \
