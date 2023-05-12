@@ -45,8 +45,23 @@ function build-provider-create {
   mkdir "$key_dir"
   ssh-keygen -t rsa -f "$temp_dir/keys/ubuntu" -P '' &> /dev/null
 
-  echo "Creating $1 on Azure..."
+  echo "Creating $1 Resource Group and VM on Azure..."
   az group create -l "$AZURE_LOCATION" -g "$1" &> /dev/null
+  # there can be a lag in resource group creation, which leads to VMs never getting made
+  for attempt in $(seq 6); do
+    rg_state=requested
+    rg_exists=$(az group exists --name "$1")
+    if [ rg_exists = "false" ]; then
+      sleep 10
+    else
+      rg_state=created
+      break
+    fi
+  done
+  if [ $rg_state  != "created" ]; then
+    echo "failed to create resource group $1"
+    exit 255
+  fi
   ip_addr=$(az vm create --name "$1" \
                --resource-group "$1" \
                --image "$AZURE_URN" \
