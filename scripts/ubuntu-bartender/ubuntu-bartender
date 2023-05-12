@@ -583,7 +583,7 @@ build-provider-create $bartender_name
 
   cat > mix-old-fashioned << EOF
 #!/bin/bash -x
-sudo add-apt-repository -y -u ppa:canonical-is-sa/ubuntu/buildd
+sudo add-apt-repository -y -u ppa:launchpad/ubuntu/buildd
 sudo apt-get -q update
 sudo apt-get -q install -y launchpad-buildd bzr git python3-ubuntutools python3-launchpadlib
 cd livecd-rootfs
