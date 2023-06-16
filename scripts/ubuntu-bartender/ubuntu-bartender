@@ -189,6 +189,15 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --hook-extras-dir <dir>                 A local directory containing extra hooks.
                                             Value: ${HOOK_EXTRAS_DIR:-None}
 
+    --hook-oem-repo <url>                   The url to a git repo hosting oem-specific hooks and files.
+                                            Value: ${HOOK_OEM_REPO:-None}
+
+    --hook-oem-branch <branch>              The branch of the ubuntu-oem-extras repo to use.
+                                            Value: ${HOOK_OEM_BRANCH:-None}
+
+    --hook-oem-dir <dir>                    A local directory containing extra oem-specific hooks.
+                                            Value: ${HOOK_OEM_DIR:-None}
+
     --chroot-archive <archive>              A local archive used to perform the build.
                                             Value: ${CHROOT_ARCHIVE:-None}
 
@@ -335,6 +344,18 @@ do
       HOOK_EXTRAS_SBOM_TOOLS_DIR="$2"
       shift
       ;;
+    --hook-oem-repo)
+      HOOK_OEM_REPO="$2"
+      shift
+      ;;
+    --hook-oem-branch)
+      HOOK_OEM_BRANCH="$2"
+      shift
+      ;;
+    --hook-oem-dir)
+      HOOK_OEM_DIR="$2"
+      shift
+      ;;
     --chroot-archive)
       CHROOT_ARCHIVE="$2"
       shift
@@ -422,6 +443,13 @@ then
   exit 255
 fi
 
+if [ -n "$HOOK_OEM_REPO" ] && [ -n "$HOOK_OEM_DIR" ]
+then
+  echo "error: cannot specify both --hook-oem-repo and --hook-oem-dir" >&2
+  print-usage
+  exit 255
+fi
+
 if [ "$SHOW_HELP" = "YES" ]
 then
   print-usage
@@ -504,6 +532,11 @@ build-provider-create $bartender_name
     cp -aR "$HOOK_EXTRAS_DIR" $temp_dir/extras
   fi
 
+  if [ -n "$HOOK_OEM_DIR" ]
+  then
+    cp -aR "$HOOK_OEM_DIR" $temp_dir/oem
+  fi
+
   if [ -n "$LIVECD_ROOTFS_DIR" ]
   then
     cp -aR "$LIVECD_ROOTFS_DIR" $temp_dir/livecd-rootfs
@@ -542,6 +575,16 @@ build-provider-create $bartender_name
     git clone -q $branch_flag $HOOK_EXTRAS_REPO extras
   fi
 
+  if [ -n "$HOOK_OEM_REPO" ]
+  then
+    branch_flag=" "
+    if [ -n "$HOOK_OEM_BRANCH" ]
+    then
+      branch_flag="-b $HOOK_OEM_BRANCH"
+    fi
+    git clone -q $branch_flag $HOOK_OEM_REPO oem
+  fi
+
   if [ -d $temp_dir/extras ]
   then
     find livecd-rootfs/live-build/ -type d -name '*hooks*' |
@@ -563,6 +606,11 @@ build-provider-create $bartender_name
     # copy the release notes tools to all the hooks directories
     find livecd-rootfs/live-build/ -type d -name '*hooks*' |
       xargs -I {} sh -c "mkdir --parents {}/extra/release-notes-tools && cp --archive --force $temp_dir/release-notes-tools/* {}/extra/release-notes-tools/"
+  fi
+
+  if [ -d $temp_dir/oem ]
+  then
+    cp -aR $temp_dir/oem livecd-rootfs/live-build/ubuntu-oem
   fi
 
   if [ -n "$HOOK_EXTRAS_SBOM_TOOLS_REPO" ]
