@@ -98,10 +98,6 @@ def ubuntu_distro_info(options):
 
 
 if __name__ == '__main__':
-    if '18.04' not in DISTRO_VERSION and '16.04' not in DISTRO_VERSION:
-        print("Old-fashioned must be run on Bionic or Xenial Ubuntu.")
-        exit(1)
-
     for cmd in PKG_INSTALL_CMDS:
         call(cmd)
 
