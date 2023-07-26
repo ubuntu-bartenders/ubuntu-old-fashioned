@@ -19,12 +19,16 @@ IMAGE_TARGET=""
 REPO_SNAPSHOT=""
 SNAP_COHORT=""
 EXTRA_PPA=""
+DEBUG=""
 
 while :; do
     case "$1" in
         --minimized)
             # Pass this flag to build the 'minimal' image family
             SUBPROJECT="--subproject minimized"
+            ;;
+        --debug)
+            DEBUG="--debug"
             ;;
         --build-from-proposed)
             # Build from -proposed pocket
@@ -255,7 +259,7 @@ time /usr/share/launchpad-buildd/bin/in-target buildlivefs \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
   --project $PROJECT $SUBPROJECT --datestamp $SERIAL --image-format $IMG_FORMAT \
   $EXTRA_PPA \
-  $IMAGE_TARGET $REPO_SNAPSHOT $SNAP_COHORT $PROPOSED_BUILD
+  $IMAGE_TARGET $REPO_SNAPSHOT $SNAP_COHORT $PROPOSED_BUILD $DEBUG
 
 echo "Copying files out to $OUTPUT_DIRECTORY"
 rm -rf $OUTPUT_DIRECTORY
