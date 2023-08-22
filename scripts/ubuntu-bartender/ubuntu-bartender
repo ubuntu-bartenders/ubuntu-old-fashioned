@@ -66,6 +66,7 @@ UBUNTU_OLD_FASHIONED_BRANCH=${UBUNTU_OLD_FASHIONED_BRANCH:-master}
 HOOK_EXTRAS_RELEASE_NOTES_TOOLS_BRANCH=${HOOK_EXTRAS_RELEASE_NOTES_TOOLS_BRANCH:-}
 HOOK_EXTRAS_SBOM_TOOLS_BRANCH=${HOOK_EXTRAS_SBOM_TOOLS_BRANCH:-}
 HOOK_EXTRAS_SBOM_TOOLS_DIR=${HOOK_EXTRAS_SBOM_TOOLS_DIR:-}
+HOOK_EXTRAS_SBOM_TOOLS_SUBDIR="${HOOK_EXTRAS_SBOM_TOOLS_SUBDIR:-cpc_sbom}"
 
 # LIVECD_ROOTFS_BRANCH is inferred below from the script name
 HOOK_EXTRAS_BRANCH=${HOOK_EXTRAS_BRANCH:-}
@@ -182,8 +183,14 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
     --hook-extras-sbom-tools-branch <branch> The branch of the sbom-tools to use.
                                             Value: ${HOOK_EXTRAS_SBOM_TOOLS_BRANCH:-None}
 
-    --hook-extras-sbom-tools-dir <dir>      The directory in the sbom-tools to copy in to hooks.d/extra directories.
+    --hook-extras-sbom-tools-subdir <dir>   The directory in the sbom-tools to copy in to hooks.d/extra directories.
                                             This is useful as you don't always want to copy the entire sbom-tools repo.
+                                            If using https://github.com/canonical/cpc-sbom as your tool
+                                            you _must_ use  "cpc_sbom" as the value (this is the default)
+                                            to ensure that the Python code is at the root, not packaging information. 
+                                            Value: ${HOOK_EXTRAS_SBOM_TOOLS_SUBDIR}
+
+    --hook-extras-sbom-tools-dir  <dir>     A local directory containing sbom-tools
                                             Value: ${HOOK_EXTRAS_SBOM_TOOLS_DIR:-None}
 
     --hook-extras-dir <dir>                 A local directory containing extra hooks.
@@ -329,6 +336,10 @@ do
       ;;
     --hook-extras-sbom-tools-branch)
       HOOK_EXTRAS_SBOM_TOOLS_BRANCH="$2"
+      shift
+      ;;
+    --hook-extras-sbom-tools-subdir)
+      HOOK_EXTRAS_SBOM_TOOLS_SUBDIR="$2"
       shift
       ;;
     --hook-extras-sbom-tools-dir)
@@ -565,6 +576,11 @@ build-provider-create $bartender_name
       xargs -I {} sh -c "mkdir --parents {}/extra/release-notes-tools && cp --archive --force $temp_dir/release-notes-tools/* {}/extra/release-notes-tools/"
   fi
 
+  if [ -n "$HOOK_EXTRAS_SBOM_TOOLS_DIR" ];
+    then
+      cp -aR "$HOOK_EXTRAS_SBOM_TOOLS_DIR" $temp_dir/sbom-tools
+  fi
+
   if [ -n "$HOOK_EXTRAS_SBOM_TOOLS_REPO" ]
   then
     branch_flag=" "
@@ -579,7 +595,7 @@ build-provider-create $bartender_name
   then
     # copy the sbom tools to all the hooks directories
     find livecd-rootfs/live-build/ -type d -name '*hooks*' |
-      xargs -I {} sh -c "mkdir --parents {}/extra/sbom-tools && cp --archive --force $temp_dir/sbom-tools/${HOOK_EXTRAS_SBOM_TOOLS_DIR}/* {}/extra/sbom-tools/"
+      xargs -I {} sh -c "mkdir --parents {}/extra/sbom-tools && cp --archive --force $temp_dir/sbom-tools/${HOOK_EXTRAS_SBOM_TOOLS_SUBDIR}/* {}/extra/sbom-tools/"
   fi
 
   cat > mix-old-fashioned << EOF
