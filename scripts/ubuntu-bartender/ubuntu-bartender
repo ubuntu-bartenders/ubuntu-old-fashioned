@@ -243,7 +243,7 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             defaults to us-central1-a
                                             Value: $GCE_ZONE
 
-    --gce-family <image-family>             Defaults to bionic amd64 (ubuntu-1804-lts).
+    --gce-family <image-family>             Defaults to focal amd64 (ubuntu-2004-lts).
                                             Value: $GCE_IMAGE_FAMILY
 
     --gce-arm-build                         Short hand switch for safe arm64 defaults in GCE
