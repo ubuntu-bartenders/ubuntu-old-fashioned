@@ -190,7 +190,7 @@ Know that setting `--aws-ami-name-filter` and `--aws-instance-type` **and** `--a
 If you want to set specifics, please use `--aws-ami-name-filter` and `--aws-instance-type` directly.
 
 ### GCE ARM builds
-This sets `GCE_IMAGE_FAMILY="ubuntu-1804-lts-arm64"` and `GCE_MACHINE_TYPE="t2a-standard-2"`, and will override **any**
+This sets `GCE_IMAGE_FAMILY="ubuntu-2004-lts-arm64"` and `GCE_MACHINE_TYPE="t2a-standard-2"`, and will override **any**
 passed in values for both. If you need to set specifics, please pass in `--gce-family` and `--gce-machine-type` directly and omit
 `--gce-arm-build` instead.
 
