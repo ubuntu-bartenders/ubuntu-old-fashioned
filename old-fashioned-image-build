@@ -232,32 +232,78 @@ fi
 
 # Inject the files from the current tree in the right place in the LXD
 # container.
-# First install livecd-rootfs. We will replace the bulk of the livecd-rootfs
+# First install livecd-rootfs and live-build. We will replace the bulk of the livecd-rootfs
 # code with our local copy. Without this livecd-rootfs is installed by
 # buildlivefs (below) overwriting changes
-lxc exec lp-$SERIES-${ARCH} -- apt-get install -y livecd-rootfs
+# If we have specified a local live-build directory then we will replace the
+# installed live-build code with our local copy. Without this live-build is
+# installed by buildlivefs (below) overwriting changes
+lxc exec lp-$SERIES-${ARCH} -- apt-get install --assume-yes livecd-rootfs live-build
 
 # Remove and recreate the livecd-rootfs code we will be replacing with code
 # in our current directory
-lxc exec lp-$SERIES-${ARCH} -- rm -rf /usr/share/livecd-rootfs
-lxc exec lp-$SERIES-${ARCH} -- mkdir -p /usr/share/livecd-rootfs
+lxc exec lp-$SERIES-${ARCH} -- rm --recursive --force /usr/share/livecd-rootfs
+lxc exec lp-$SERIES-${ARCH} -- mkdir --parents /usr/share/livecd-rootfs
 # Old LXCs don't have recursive push... so we tar and untar instead.
-tar czvf $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz .
-lxc file push $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz lp-$SERIES-${ARCH}/usr/share/livecd-rootfs/
-lxc exec lp-$SERIES-${ARCH} -- tar xzvf /usr/share/livecd-rootfs/live-build.tar.gz -C /usr/share/livecd-rootfs/
+ls --all -l
+tar --create --gzip --verbose --file $OLD_FASHIONED_BUILD_CACHE/livecd-rootfs.tar.gz .
+lxc file push $OLD_FASHIONED_BUILD_CACHE/livecd-rootfs.tar.gz lp-$SERIES-${ARCH}/usr/share/livecd-rootfs/
+lxc exec lp-$SERIES-${ARCH} -- tar --extract --gzip --verbose --file /usr/share/livecd-rootfs/livecd-rootfs.tar.gz -C /usr/share/livecd-rootfs/
+# remove the tarball as it is no longer needed
+lxc exec lp-$SERIES-${ARCH} -- rm --verbose /usr/share/livecd-rootfs/livecd-rootfs.tar.gz
+
+# If the $HOME/live-build directory exists, copy it into the LXD container overwriting the installed live-build scripts
+if [ -d $HOME/live-build ] ; then
+  pushd $HOME/live-build
+  # create a tarball of the live-build code
+  tar --create --gzip --verbose --file $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz .
+  # create a temporary directory in the container to hold the live-build code
+  lxc exec lp-$SERIES-${ARCH} -- mkdir --parents /tmp/live-build
+  # push the tarball into the container to the temporary directory
+  lxc file push $OLD_FASHIONED_BUILD_CACHE/live-build.tar.gz lp-$SERIES-${ARCH}/tmp/live-build/
+  # extract the tarball into the temporary live-build directory
+  lxc exec lp-$SERIES-${ARCH} -- tar --extract --gzip --verbose --file /tmp/live-build/live-build.tar.gz -C /tmp/live-build/
+  # remove the tarball as it is no longer needed
+  lxc exec lp-$SERIES-${ARCH} -- rm --verbose /tmp/live-build/live-build.tar.gz
+
+  # Now copy the live-build code into the installed locations in the container
+  # These steps were taken from the install section of the live-build debian/rules file
+  #mkdir -p $(DESTDIR)/usr/share/live/build
+  lxc exec lp-$SERIES-${ARCH} -- mkdir --verbose --parents /usr/share/live/build
+  #cp -r frontends/cgi data functions templates VERSION $(DESTDIR)/usr/share/live/build
+  lxc exec lp-$SERIES-${ARCH} -- cp --recursive --verbose /tmp/live-build/frontends/cgi /tmp/live-build/data /tmp/live-build/functions /tmp/live-build/templates /tmp/live-build/VERSION /usr/share/live/build
+  #cp -r share/* $(DESTDIR)/usr/share/live/build
+  lxc exec lp-$SERIES-${ARCH} -- bash -c "cp --archive --verbose /tmp/live-build/share/* /usr/share/live/build"
+
+  #
+  ## Installing executables
+  #mkdir -p $(DESTDIR)/usr/bin
+  lxc exec lp-$SERIES-${ARCH} -- mkdir --verbose --parents /usr/bin
+  #cp -a bin/* $(DESTDIR)/usr/bin
+  lxc exec lp-$SERIES-${ARCH} -- bash -c "cp --archive --verbose /tmp/live-build/bin/* /usr/bin"
+  #
+  #mkdir -p $(DESTDIR)/usr/lib/live
+  lxc exec lp-$SERIES-${ARCH} -- mkdir --verbose --parents /usr/lib/live
+  #cp -a scripts/* $(DESTDIR)/usr/lib/live
+  lxc exec lp-$SERIES-${ARCH} -- bash -c "cp --archive --verbose /tmp/live-build/scripts/* /usr/lib/live"
+
+  lxc exec lp-$SERIES-${ARCH} -- chmod +x /usr/lib/live/build/lb_chroot_early_hooks
+
+  popd
+fi
 
 # Use qemu-backports to build xenial images. Otherwise, the images may not boot.
 if [ "$SERIES" = "xenial" ]; then
-  lxc exec lp-$SERIES-${ARCH} -- apt-get install -y software-properties-common
-  lxc exec lp-$SERIES-${ARCH} -- add-apt-repository -y ppa:cloud-images-release-managers/qemu-backports
+  lxc exec lp-$SERIES-${ARCH} -- apt-get install --assume-yes software-properties-common
+  lxc exec lp-$SERIES-${ARCH} -- add-apt-repository --yes ppa:cloud-images-release-managers/qemu-backports
   lxc exec lp-$SERIES-${ARCH} -- apt-get update
-  lxc exec lp-$SERIES-${ARCH} -- apt-get install -y qemu-utils
+  lxc exec lp-$SERIES-${ARCH} -- apt-get install --assume-yes qemu-utils
 fi
 
 # Actually build.
 time /usr/share/launchpad-buildd/bin/in-target buildlivefs \
   --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
-  --project $PROJECT $SUBPROJECT --datestamp $SERIAL --image-format $IMG_FORMAT \
+  --project $PROJECT $SUBPROJECT --datestamp $SERIAL --image-format $IMG_FORMAT --debug \
   $EXTRA_PPA \
   $IMAGE_TARGET $REPO_SNAPSHOT $SNAP_COHORT $PROPOSED_BUILD $DEBUG
 
