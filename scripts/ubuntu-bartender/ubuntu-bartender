@@ -59,11 +59,13 @@ HOOK_EXTRAS_REPO=${HOOK_EXTRAS_REPO:-}
 HOOK_EXTRAS_DIR=${HOOK_EXTRAS_DIR:-}
 HOOK_EXTRAS_RELEASE_NOTES_TOOLS_REPO=${HOOK_EXTRAS_RELEASE_NOTES_TOOLS_REPO:-}
 HOOK_EXTRAS_SBOM_TOOLS_REPO=${HOOK_EXTRAS_SBOM_TOOLS_REPO:-}
+HOOK_MAAS_IMAGES_REPO=${HOOK_MAAS_IMAGES_REPO:-}
 
 # And any specific branches for each that should be used:
 
 UBUNTU_OLD_FASHIONED_BRANCH=${UBUNTU_OLD_FASHIONED_BRANCH:-master}
 HOOK_EXTRAS_RELEASE_NOTES_TOOLS_BRANCH=${HOOK_EXTRAS_RELEASE_NOTES_TOOLS_BRANCH:-}
+HOOK_MAAS_IMAGES_BRANCH=${HOOK_MAAS_IMAGES_BRANCH:-}
 HOOK_EXTRAS_SBOM_TOOLS_BRANCH=${HOOK_EXTRAS_SBOM_TOOLS_BRANCH:-}
 HOOK_EXTRAS_SBOM_TOOLS_DIR=${HOOK_EXTRAS_SBOM_TOOLS_DIR:-}
 HOOK_EXTRAS_SBOM_TOOLS_SUBDIR="${HOOK_EXTRAS_SBOM_TOOLS_SUBDIR:-cpc_sbom}"
@@ -185,6 +187,12 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
 
     --hook-extras-release-notes-tools-branch <branch> The branch of the release-notes-tools to use.
                                             Value: ${HOOK_EXTRAS_RELEASE_NOTES_TOOLS_BRANCH:-None}
+
+    --hook-maas-images-repo <url> The url to a git repo hosting maas-images codebase.
+                                            Value: ${HOOK_MAAS_IMAGES_REPO:-None}
+
+    --hook-maas-images-branch <branch> The branch of the maas-images to use.
+                                            Value: ${HOOK_MAAS_IMAGES_BRANCH:-None}
 
     --hook-extras-sbom-tools-repo <url>     The url to a git repo hosting sbom tools.
                                             Value: ${HOOK_EXTRAS_SBOM_TOOLS_REPO:-None}
@@ -349,6 +357,14 @@ do
       ;;
     --hook-extras-release-notes-tools-branch)
       HOOK_EXTRAS_RELEASE_NOTES_TOOLS_BRANCH="$2"
+      shift
+      ;;
+    --hook-maas-images-repo)
+      HOOK_MAAS_IMAGES_REPO="$2"
+      shift
+      ;;
+    --hook-maas-images-branch)
+      HOOK_MAAS_IMAGES_BRANCH="$2"
       shift
       ;;
     --hook-extras-sbom-tools-repo)
@@ -614,6 +630,23 @@ build-provider-create $bartender_name
     # copy the release notes tools to all the hooks directories
     find livecd-rootfs/live-build/ -type d -name '*hooks*' |
       xargs -I {} sh -c "mkdir --parents {}/extra/release-notes-tools && cp --archive --force $temp_dir/release-notes-tools/* {}/extra/release-notes-tools/"
+  fi
+
+  if [ -n "$HOOK_MAAS_IMAGES_REPO" ]
+  then
+    branch_flag=" "
+    if [ -n "$HOOK_MAAS_IMAGES_BRANCH" ]
+    then
+      branch_flag="--branch $HOOK_MAAS_IMAGES_BRANCH"
+    fi
+    git clone --quiet --depth 1 -q $branch_flag $HOOK_MAAS_IMAGES_REPO maas
+  fi
+
+  if [ -d $temp_dir/maas ]
+  then
+    # copy the maas images code to the ubuntu-cpc directory
+    mkdir --verbose --parents livecd-rootfs/live-build/ubuntu-cpc/maas
+    cp --archive --verbose --force $temp_dir/maas/* livecd-rootfs/live-build/ubuntu-cpc/maas/
   fi
 
   if [ -n "$HOOK_EXTRAS_SBOM_TOOLS_DIR" ];
