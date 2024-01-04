@@ -106,7 +106,7 @@ fi
 # Please preface each provider default with the provider name
 
 # AWS SPECIFIC DEFAULTS
-AWS_PROFILE="default"
+: ${AWS_PROFILE:=default}
 AWS_INSTANCE_TYPE="m5.large"
 # Official Canonical OwnerId
 AWS_AMI_OWNER=099720109477
