@@ -244,7 +244,7 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             Value: $AWS_KEYPAIR_NAME
 
     --aws-instance-type                     EC2 instance type. default is m5.large.
-                                            m6g.large is a good choice for arm
+                                            m7g.large is a good choice for arm
                                             Value: $AWS_INSTANCE_TYPE
 
     --aws-arm-build                         Short hand switch for safe arm64 defaults
@@ -481,7 +481,7 @@ fi
 # remember -- you can always specific all your own info
 if [ "$AWS_ARM_BUILD" = "true" ]
 then
-  AWS_INSTANCE_TYPE="m6g.large"
+  AWS_INSTANCE_TYPE="m7g.large"
   AWS_ARCH="arm64"
   BUILD_PROVIDER="aws"
 else
