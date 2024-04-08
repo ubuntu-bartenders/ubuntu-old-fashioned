@@ -1,13 +1,14 @@
 function _find-ami() {
   AMI_FILTERS="--filters Name=name,Values=$AWS_AMI_NAME_FILTER"
-  aws --region "$region" ec2 describe-images \
+  aws --region "$region" --profile "${AWS_PROFILE}" \
+      ec2 describe-images \
       --owners "$AWS_AMI_OWNER" $AMI_FILTERS --output json |
-    jq -r '.Images | sort_by(.["CreationDate"])[-1].ImageId'
+      jq -r '.Images | sort_by(.["CreationDate"])[-1].ImageId'
 }
 
 function _wait-instance-running() {
   for attempt in $(seq 12); do
-    state=$(aws --output json --region "$region" \
+    state=$(aws --output json --region "$region" --profile "${AWS_PROFILE}" \
                 ec2 describe-instances \
                 --instance-ids "$instance_id" |
               jq -r '.Reservations[0].Instances[0].State.Name')
@@ -64,7 +65,8 @@ function build-provider-assert-ready {
 function build-provider-destroy {
   if [ -n "$instance_id" ]; then
     echo "Destroying $1 on AWS..."
-    aws --region "$region" ec2 terminate-instances \
+    aws --region "$region" --profile "${AWS_PROFILE}" \
+        ec2 terminate-instances \
         --instance-ids "$instance_id" &>/dev/null
   fi
 }
