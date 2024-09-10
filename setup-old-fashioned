@@ -140,8 +140,9 @@ if __name__ == '__main__':
         cmd = []
         print("'none' option selected. Skipping livecd-rootfs install...")
 
-    print("Executing {}".format(' '.join(cmd)))
-    call(cmd)
+    if cmd:
+        print("Executing {}".format(' '.join(cmd)))
+        call(cmd)
 
     print("Done installing tools. All that's left to do is clone and copy any "
           "additional hooks you might want to run.")
