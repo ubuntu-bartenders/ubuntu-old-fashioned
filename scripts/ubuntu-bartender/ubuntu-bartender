@@ -115,7 +115,7 @@ AWS_ARM_BUILD=false
 
 # MULTIPASS SPECIFIC DEFAULTS
 MULTIPASS_DISK_SIZE=50G
-MULTIPASS_IMAGE=daily:f # daily image of focal
+MULTIPASS_IMAGE=daily:n # daily image of noble
 # you can optionally override memory cap by setting MULTIPASS_MEM_SIZE
 
 # By default, do not exceed half the total memory or 8GiB (whichever is smaller).
@@ -133,13 +133,13 @@ fi
 MULTIPASS_MEM_SIZE=${MULTIPASS_MEM_SIZE:-$MULTIPASS_MEM_SIZE_DEFAULT}
 
 # AZURE SPECIFIC DEFAULTS
-AZURE_URN="Canonical:0001-com-ubuntu-server-focal-daily:20_04-daily-lts-gen2:latest"
+AZURE_URN="Canonical:ubuntu-24_04-lts:server:latest"
 AZURE_INSTANCE_SIZE="Standard_F8s_v2"
 AZURE_LOCATION="France Central"
 
 # GCE SPECIFIC DEFAULTS
 GCE_ARM_BUILD=false
-GCE_IMAGE_FAMILY="ubuntu-2004-lts"
+GCE_IMAGE_FAMILY="ubuntu-2404-lts-amd64"
 GCE_MACHINE_TYPE="n2-standard-2"
 GCE_ZONE="us-central1-a" # Low CO2 region with both ARM64 and AMD64 instances available
 
@@ -225,9 +225,9 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             Value: Cleanup? $SHOULD_CLEANUP
 
     --aws-ami-name-filter <image-name>      Filter for finding an AWS ami by name
-                                            defaults to Focal AMD64. This is
+                                            defaults to Noble AMD64. This is
                                             the base for the builds. 
-                                            Value: ubuntu/images-testing/hvm-ssd/ubuntu-focal-daily-${ARCH}-server-*
+                                            Value: ubuntu/images-testing/hvm-ssd-gp3/ubuntu-noble-daily-${ARCH}-server-*
 
     --aws-profile <profile>                 AWS profile used with the aws cli
                                             Value: $AWS_PROFILE
@@ -267,7 +267,7 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
                                             defaults to us-central1-a
                                             Value: $GCE_ZONE
 
-    --gce-family <image-family>             Defaults to focal amd64 (ubuntu-2004-lts).
+    --gce-family <image-family>             Defaults to noble amd64 (ubuntu-2404-lts-amd64).
                                             Value: $GCE_IMAGE_FAMILY
 
     --gce-arm-build                         Short hand switch for safe arm64 defaults in GCE
@@ -492,12 +492,12 @@ fi
 # setup the new GCE defaults.
 if [ "$GCE_ARM_BUILD" = "true" ]
 then
-  GCE_IMAGE_FAMILY="ubuntu-2004-lts-arm64"
+  GCE_IMAGE_FAMILY="ubuntu-2404-lts-arm64"
   GCE_MACHINE_TYPE="t2a-standard-2"
   BUILD_PROVIDER="gce"
 fi
 
-AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd/ubuntu-focal-daily-${AWS_ARCH}-server-*"
+AWS_AMI_NAME_FILTER="ubuntu/images-testing/hvm-ssd-gp3/ubuntu-noble-daily-${AWS_ARCH}-server-*"
 
 # Verify that the specified build provider is available and ready
 
