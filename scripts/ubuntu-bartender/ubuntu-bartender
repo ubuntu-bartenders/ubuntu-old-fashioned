@@ -694,5 +694,5 @@ echo "(See progress in $bartender_name.log)"
 build-provider-run $bartender_name -- bash mix-old-fashioned &>$bartender_name.log </dev/null
 
 echo "Pouring $drink_name..."
-build-provider-run $bartender_name -- tar czf drink.tar.gz build.output
+build-provider-run $bartender_name -- sudo tar czf drink.tar.gz build.output
 build-provider-download $bartender_name drink.tar.gz $drink_name
