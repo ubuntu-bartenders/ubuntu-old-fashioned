@@ -99,8 +99,8 @@ def ubuntu_distro_info(options):
 
 
 if __name__ == '__main__':
-    if '20.04' not in DISTRO_VERSION:
-        print("Old-fashioned must be run on Ubuntu Focal.")
+    if '24.04' not in DISTRO_VERSION:
+        print("Old-fashioned must be run on Ubuntu Noble.")
         exit(1)
 
     for cmd in PKG_INSTALL_CMDS:

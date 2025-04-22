@@ -209,9 +209,9 @@ EOF
 fi
 
 # Use the same apt mirror as the host
-export MIRROR=$(egrep "(archive|ports)" /etc/apt/sources.list|head -1 | \
+export MIRROR=$(egrep "^URIs:" /etc/apt/sources.list.d/ubuntu.sources|head -1 | \
                cut -d' ' -f2 | cut -d'/' -f3)
-export MIRROR_PATH=$(egrep "(archive|ports)" /etc/apt/sources.list|head -1 | \
+export MIRROR_PATH=$(egrep "^URIs:" /etc/apt/sources.list.d/ubuntu.sources|head -1 | \
                cut -d' ' -f2 | cut -d'/' -f4)
 
 proposed_source=""
