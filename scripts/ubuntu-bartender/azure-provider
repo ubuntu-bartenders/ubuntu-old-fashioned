@@ -51,7 +51,7 @@ function build-provider-create {
   for attempt in $(seq 6); do
     rg_state=requested
     rg_exists=$(az group exists --name "$1")
-    if [ rg_exists = "false" ]; then
+    if [ "$rg_exists" = "false" ]; then
       sleep 10
     else
       rg_state=created
