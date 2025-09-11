@@ -192,9 +192,9 @@ sudo sed -i 's/ntp\.buildd/0\.pool\.ntp\.org/g' \
 
 /usr/share/launchpad-buildd/bin/builder-prep
 /usr/share/launchpad-buildd/bin/in-target unpack-chroot --backend=lxd \
-  --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $CHROOT_ARCHIVE
+  --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME $CHROOT_ARCHIVE
 /usr/share/launchpad-buildd/bin/in-target mount-chroot --backend=lxd \
-  --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
+  --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME
 
 # Inject squid proxy config in the LXC if one exists in the host.
 SQUID_ADDRESS=$(cat /etc/apt/apt.conf.d/* | sed -n 's/Acquire::http::Proxy "\(.*\)";/\1/p')
@@ -221,14 +221,14 @@ if [ "$PROPOSED_IN_IMAGE" = "true" ]; then
 fi
 
 /usr/share/launchpad-buildd/bin/in-target override-sources-list \
-  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME \
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME \
     "deb http://$MIRROR/${MIRROR_PATH} $SERIES main restricted universe multiverse" \
     "deb http://$MIRROR/${MIRROR_PATH} $SERIES-security main restricted universe multiverse" \
     "deb http://$MIRROR/${MIRROR_PATH} $SERIES-updates main restricted universe multiverse" \
     "${proposed_source}"
   
 /usr/share/launchpad-buildd/bin/in-target update-debian-chroot \
-  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME
 
 # Inject the files from the current tree in the right place in the LXD
 # container.
@@ -302,7 +302,7 @@ fi
 
 # Actually build.
 time /usr/share/launchpad-buildd/bin/in-target buildlivefs \
-  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
   --project $PROJECT $SUBPROJECT --datestamp $SERIAL --image-format $IMG_FORMAT --debug \
   $EXTRA_PPA \
   $IMAGE_TARGET $REPO_SNAPSHOT $SNAP_COHORT $PROPOSED_BUILD $DEBUG
@@ -324,10 +324,10 @@ fi
 
 # Cleanup the builder LXD.
 /usr/share/launchpad-buildd/bin/in-target scan-for-processes \
-  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME
 
 /usr/share/launchpad-buildd/bin/in-target umount-chroot \
-  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME
 
 /usr/share/launchpad-buildd/bin/in-target remove-build \
-  --backend=lxd --series=$SERIES --arch=${ARCH} $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME
