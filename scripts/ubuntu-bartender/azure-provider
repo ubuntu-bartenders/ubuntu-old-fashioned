@@ -51,7 +51,7 @@ function build-provider-create {
   for attempt in $(seq 6); do
     rg_state=requested
     rg_exists=$(az group exists --name "$1")
-    if [ rg_exists = "false" ]; then
+    if [ "$rg_exists" = "false" ]; then
       sleep 10
     else
       rg_state=created
@@ -67,8 +67,9 @@ function build-provider-create {
                --image "$AZURE_URN" \
                --size "$AZURE_INSTANCE_SIZE" \
                --admin-username ubuntu \
-               --ssh-key-value "$key_dir/ubuntu.pub" 2> /dev/null |
-               jq -r '.publicIpAddress')
+               --ssh-key-value "$key_dir/ubuntu.pub" \
+               -o json 2> /dev/null )
+  ip_addr=$(echo "$ip_addr" | jq -r '.publicIpAddress')
   _wait-instance-connectable
 }
 
