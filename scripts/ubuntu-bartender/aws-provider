@@ -79,7 +79,7 @@ function build-provider-create {
                     --key-name "$AWS_KEYPAIR_NAME" \
                     --instance-type "$AWS_INSTANCE_TYPE" \
                     --image-id "$(_find-ami)" \
-                    --block-device-mappings "DeviceName=/dev/sda1,Ebs={VolumeSize=50,VolumeType=gp2}" \
+                    --block-device-mappings "DeviceName=/dev/sda1,Ebs={VolumeSize=60,VolumeType=gp3}" \
                     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$1}]" |
                   jq -r '.Instances[0].InstanceId')
   _wait-instance-running
