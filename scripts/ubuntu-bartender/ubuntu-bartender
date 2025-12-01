@@ -113,9 +113,10 @@ AWS_AMI_OWNER=099720109477
 AWS_KEYPAIR_NAME=$USER
 AWS_ARM_BUILD=false
 
-# MULTIPASS SPECIFIC DEFAULTS
-MULTIPASS_DISK_SIZE=50G
+# MULTIPASS/LXD SPECIFIC DEFAULTS
+LOCAL_VM_DISK_SIZE=50G
 MULTIPASS_IMAGE=daily:n # daily image of noble
+LXD_IMAGE="ubuntu:noble" # release image of noble
 # you can optionally override memory cap by setting MULTIPASS_MEM_SIZE
 
 # By default, do not exceed half the total memory or 8GiB (whichever is smaller).
@@ -125,12 +126,24 @@ HALF_MEM="$(( $TOTAL_MEM / 2 ))"
 CAP_MEM=8192
 
 if [[ "$HALF_MEM" -lt "$CAP_MEM" ]]; then
-    MULTIPASS_MEM_SIZE_DEFAULT="${HALF_MEM}M"
+    LOCAL_VM_MEM_SIZE_DEFAULT="${HALF_MEM}M"
 else
-    MULTIPASS_MEM_SIZE_DEFAULT="${CAP_MEM}M"
+    LOCAL_VM_MEM_SIZE_DEFAULT="${CAP_MEM}M"
 fi
 
-MULTIPASS_MEM_SIZE=${MULTIPASS_MEM_SIZE:-$MULTIPASS_MEM_SIZE_DEFAULT}
+LOCAL_VM_MEM_SIZE=${LOCAL_VM_MEM_SIZE:-$LOCAL_VM_MEM_SIZE_DEFAULT}
+
+# By default, do not exceed 1/6 the total cores or 4 cores (whichever is smaller).
+ONE_SIXTH_CORES="$(( $(nproc) / 6 ))"
+CAP_CPU=4
+
+if [[ "$ONE_SIXTH_CORES" -lt "$CAP_CPU" ]]; then
+    LXD_CPU_DEFAULT="${ONE_SIXTH_CORES}"
+else
+    LXD_CPU_DEFAULT="${CAP_CPU}"
+fi
+
+LXD_CPU=${LXD_CPU:-$LXD_CPU_DEFAULT}
 
 # AZURE SPECIFIC DEFAULTS
 AZURE_URN="Canonical:ubuntu-24_04-lts:server:latest"
