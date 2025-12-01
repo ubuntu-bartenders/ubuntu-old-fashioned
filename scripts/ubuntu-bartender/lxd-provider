@@ -1,0 +1,48 @@
+function _wait_agent_start() {
+  for attempt in $(seq 12); do
+    if ! lxc exec "$1" -- true &> /dev/null; then
+      sleep 5
+    else
+      state=connectable
+      break
+    fi
+  done
+
+  if [ "$state" != "connectable" ]; then
+    echo "error: LXD agent not running after 1 minutes"
+    exit 255
+  fi
+}
+
+function build-provider-assert-ready {
+  if ! command -v lxc &>/dev/null
+  then
+    echo "error: lxc was not found in PATH" >&2
+    exit 255
+  fi
+}
+
+function build-provider-destroy {
+  lxc delete -f "$1"
+}
+
+function build-provider-create {
+  lxc launch --vm "$LXD_IMAGE" "$1" \
+    --config limits.cpu="${LXD_CPU}" \
+    --config limits.memory="${LOCAL_VM_MEM_SIZE}iB" \
+    --device root,size="${LOCAL_VM_DISK_SIZE}iB"
+
+  _wait_agent_start "$1"
+}
+
+function build-provider-upload {
+  lxc file push "$2" "$1/root/$3"
+}
+
+function build-provider-download {
+  lxc file pull "$1/root/$2" "$3"
+}
+
+function build-provider-run {
+  lxc exec $@
+}

@@ -11,7 +11,7 @@ function build-provider-destroy {
 }
 
 function build-provider-create {
-  multipass launch --disk $MULTIPASS_DISK_SIZE --memory $MULTIPASS_MEM_SIZE --name "$1" $MULTIPASS_IMAGE
+  multipass launch --disk $LOCAL_VM_DISK_SIZE --memory $LOCAL_VM_MEM_SIZE --name "$1" $MULTIPASS_IMAGE
 }
 
 function build-provider-upload {
