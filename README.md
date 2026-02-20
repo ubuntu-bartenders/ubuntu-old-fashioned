@@ -21,14 +21,11 @@ manage the Ubuntu Old Fashioned build for you.
 
 ## Installation
 
-On Ubuntu (**works for Focal, Bionic or Xenial**):
+On Ubuntu (**works only for Noble**):
 
 The easiest way to install is to use the included setup script:
 
 `./setup-old-fashioned`
-
-Note: Since old-fashioned relies on launchpad buildd to be available, it will
-unfortunately not work until that package is made available for other series.
 
 ## Example
 
