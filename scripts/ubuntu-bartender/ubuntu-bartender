@@ -468,6 +468,9 @@ do
       OUTPUT_PREFIX="$2"
       shift
       ;;
+    --print-build)
+      PRINT_BUILD=1
+      ;;
     --)
       shift
       break
@@ -549,7 +552,7 @@ fi
 
 temp_dir=$(mktemp --tmpdir="$TEMP_DIR_LOC" --directory ubuntu-bartender-multipass.XXXXXXXXXX)
 bartender_name=$(petname)-ubuntu-bartender
-drink_name=$OUTPUT_PREFIX${bartender_name/-bartender/-on-the-rocks.tar.gz}
+drink_name=${OUTPUT_PREFIX}${bartender_name/-bartender/-on-the-rocks.tar.gz}
 
 function cleanup {
   echo "Cleaning up..."
@@ -709,11 +712,16 @@ EOF
   build-provider-run $bartender_name -- rm -v ingredients.tar.gz
 )
 
-log_file=$OUTPUT_PREFIX$bartender_name.log
+log_file=${OUTPUT_PREFIX}${bartender_name}.log
+log_console=/dev/null
+if [[ -v PRINT_BUILD ]]; then
+    log_console=/dev/stdout
+fi
 
 echo "Mixing drink..."
 echo "(See progress in $log_file)"
-build-provider-run $bartender_name -- bash mix-old-fashioned &>"$log_file" </dev/null
+set -o pipefail
+build-provider-run $bartender_name -- bash mix-old-fashioned </dev/null |& tee "$log_file" >$log_console
 
 echo "Pouring $drink_name..."
 build-provider-run $bartender_name -- sudo tar czf drink.tar.gz build.output
