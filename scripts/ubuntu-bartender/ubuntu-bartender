@@ -86,6 +86,9 @@ SHOULD_CLEANUP=${SHOULD_CLEANUP:-YES}
 # Where to build the ingredients.tar.gz file
 TEMP_DIR_LOC=$HOME
 
+# Prefix for output (tarball and log) paths
+OUTPUT_PREFIX=
+
 # Parse the name of the script to see if we can infer some variables
 
 maybe_series=$(basename $0 | cut -d'-' -f2)
@@ -461,6 +464,13 @@ do
       TEMP_DIR_LOC="$2"
       shift
       ;;
+    --output-prefix)
+      OUTPUT_PREFIX="$2"
+      shift
+      ;;
+    --print-build)
+      PRINT_BUILD=1
+      ;;
     --)
       shift
       break
@@ -542,7 +552,7 @@ fi
 
 temp_dir=$(mktemp --tmpdir="$TEMP_DIR_LOC" --directory ubuntu-bartender-multipass.XXXXXXXXXX)
 bartender_name=$(petname)-ubuntu-bartender
-drink_name=${bartender_name/-bartender/-on-the-rocks.tar.gz}
+drink_name=${OUTPUT_PREFIX}${bartender_name/-bartender/-on-the-rocks.tar.gz}
 
 function cleanup {
   echo "Cleaning up..."
@@ -702,9 +712,16 @@ EOF
   build-provider-run $bartender_name -- rm -v ingredients.tar.gz
 )
 
+log_file=${OUTPUT_PREFIX}${bartender_name}.log
+log_console=/dev/null
+if [[ -v PRINT_BUILD ]]; then
+    log_console=/dev/stdout
+fi
+
 echo "Mixing drink..."
-echo "(See progress in $bartender_name.log)"
-build-provider-run $bartender_name -- bash mix-old-fashioned &>$bartender_name.log </dev/null
+echo "(See progress in $log_file)"
+set -o pipefail
+build-provider-run $bartender_name -- bash mix-old-fashioned </dev/null |& tee "$log_file" >$log_console
 
 echo "Pouring $drink_name..."
 build-provider-run $bartender_name -- sudo tar czf drink.tar.gz build.output
