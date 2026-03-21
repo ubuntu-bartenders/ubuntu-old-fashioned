@@ -19,6 +19,7 @@ IMAGE_TARGET=""
 REPO_SNAPSHOT=""
 SNAP_COHORT=""
 EXTRA_PPA=""
+ARCH_VARIANT=""
 DEBUG=""
 
 while :; do
@@ -117,6 +118,12 @@ while :; do
             SNAP_COHORT="--cohort-key $2"
             shift
             ;;
+        --arch-variant)
+            # Specify an architecture variant to build.
+            # Currently this only works for amd64v3.
+            ARCH_VARIANT="$2"
+            shift
+            ;;
         -?*)
             echo "WARNING: Unknown option or argument ignored: $1"
             exit 1
@@ -134,6 +141,13 @@ case `arch` in
     ppc64le) ARCH=ppc64el;;
     *) echo "Unrecognized arch: $(arch)"; exit 1;;
 esac
+
+if [ -z $ARCH_VARIANT ]; then
+  $ARCH_VARIANT=$ARCH
+elif [ "$ARCH" != "amd64" ] || [ "$ARCH_VARIANT" != "amd64v3" ]; then
+  echo "amd64v3 is the only supported architecture variant, and it must be paired with amd64!"
+  exit 1
+fi
 
 if [ x$SERIES = "x" ] ; then
     echo "Missing required '--series' argument e.g. '--series xenial'"
@@ -192,9 +206,9 @@ sudo sed -i 's/ntp\.buildd/0\.pool\.ntp\.org/g' \
 
 /usr/share/launchpad-buildd/bin/builder-prep
 /usr/share/launchpad-buildd/bin/in-target unpack-chroot --backend=lxd \
-  --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME $CHROOT_ARCHIVE
+  --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH_VARIANT} $LIVEFS_NAME $CHROOT_ARCHIVE
 /usr/share/launchpad-buildd/bin/in-target mount-chroot --backend=lxd \
-  --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME
+  --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH_VARIANT} $LIVEFS_NAME
 
 # Inject squid proxy config in the LXC if one exists in the host.
 SQUID_ADDRESS=$(cat /etc/apt/apt.conf.d/* | sed -n 's/Acquire::http::Proxy "\(.*\)";/\1/p')
@@ -221,14 +235,14 @@ if [ "$PROPOSED_IN_IMAGE" = "true" ]; then
 fi
 
 /usr/share/launchpad-buildd/bin/in-target override-sources-list \
-  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME \
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH_VARIANT} $LIVEFS_NAME \
     "deb http://$MIRROR/${MIRROR_PATH} $SERIES main restricted universe multiverse" \
     "deb http://$MIRROR/${MIRROR_PATH} $SERIES-security main restricted universe multiverse" \
     "deb http://$MIRROR/${MIRROR_PATH} $SERIES-updates main restricted universe multiverse" \
     "${proposed_source}"
   
 /usr/share/launchpad-buildd/bin/in-target update-debian-chroot \
-  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH_VARIANT} $LIVEFS_NAME
 
 # Inject the files from the current tree in the right place in the LXD
 # container.
@@ -302,7 +316,7 @@ fi
 
 # Actually build.
 time /usr/share/launchpad-buildd/bin/in-target buildlivefs \
-  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME $HTTP_PROXY \
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH_VARIANT} $LIVEFS_NAME $HTTP_PROXY \
   --project $PROJECT $SUBPROJECT --datestamp $SERIAL --image-format $IMG_FORMAT --debug \
   $EXTRA_PPA \
   $IMAGE_TARGET $REPO_SNAPSHOT $SNAP_COHORT $PROPOSED_BUILD $DEBUG
@@ -324,10 +338,10 @@ fi
 
 # Cleanup the builder LXD.
 /usr/share/launchpad-buildd/bin/in-target scan-for-processes \
-  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH_VARIANT} $LIVEFS_NAME
 
 /usr/share/launchpad-buildd/bin/in-target umount-chroot \
-  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH_VARIANT} $LIVEFS_NAME
 
 /usr/share/launchpad-buildd/bin/in-target remove-build \
-  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH} $LIVEFS_NAME
+  --backend=lxd --series=$SERIES --abi-tag=${ARCH} --isa-tag=${ARCH_VARIANT} $LIVEFS_NAME
