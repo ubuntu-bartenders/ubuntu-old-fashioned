@@ -20,6 +20,7 @@ REPO_SNAPSHOT=""
 SNAP_COHORT=""
 EXTRA_PPA=""
 DEBUG=""
+LIVECD_ROOTFS_POCKET=""
 
 while :; do
     case "$1" in
@@ -51,6 +52,13 @@ while :; do
             # inject public ppas into the build environment
             # e.g. 'mylpname/someppa'
             EXTRA_PPA="--extra-ppa $2"
+            shift
+            ;;
+        --livecd-rootfs-archive-pocket)
+            # Build with the livecd-rootfs *binary package* from this pocket
+            # instead of the local checkout. Intended for SRU verification.
+            # e.g. 'release', 'updates', 'security' or 'proposed'
+            LIVECD_ROOTFS_POCKET="$2"
             shift
             ;;
         --image-format|--img_format)
@@ -240,17 +248,32 @@ fi
 # installed by buildlivefs (below) overwriting changes
 lxc exec lp-$SERIES-${ARCH} -- apt-get install --assume-yes livecd-rootfs live-build
 
-# Remove and recreate the livecd-rootfs code we will be replacing with code
-# in our current directory
-lxc exec lp-$SERIES-${ARCH} -- rm --recursive --force /usr/share/livecd-rootfs
-lxc exec lp-$SERIES-${ARCH} -- mkdir --parents /usr/share/livecd-rootfs
-# Old LXCs don't have recursive push... so we tar and untar instead.
-ls --all -l
-tar --create --gzip --verbose --file $OLD_FASHIONED_BUILD_CACHE/livecd-rootfs.tar.gz .
-lxc file push $OLD_FASHIONED_BUILD_CACHE/livecd-rootfs.tar.gz lp-$SERIES-${ARCH}/usr/share/livecd-rootfs/
-lxc exec lp-$SERIES-${ARCH} -- tar --extract --gzip --verbose --file /usr/share/livecd-rootfs/livecd-rootfs.tar.gz -C /usr/share/livecd-rootfs/
-# remove the tarball as it is no longer needed
-lxc exec lp-$SERIES-${ARCH} -- rm --verbose /usr/share/livecd-rootfs/livecd-rootfs.tar.gz
+if [ -n "$LIVECD_ROOTFS_POCKET" ] ; then
+  # SRU verification mode: keep the packaged livecd-rootfs and pull it from the
+  # requested pocket, rather than overwriting it with the local checkout.
+  if [ "$LIVECD_ROOTFS_POCKET" = "release" ] ; then
+    POCKET_SUITE="$SERIES"
+  else
+    POCKET_SUITE="$SERIES-$LIVECD_ROOTFS_POCKET"
+  fi
+  lxc exec lp-$SERIES-${ARCH} -- bash -c \
+    "echo 'deb http://$MIRROR/${MIRROR_PATH} $POCKET_SUITE main restricted universe multiverse' > /etc/apt/sources.list.d/livecd-rootfs-pocket.list"
+  lxc exec lp-$SERIES-${ARCH} -- apt-get update
+  lxc exec lp-$SERIES-${ARCH} -- apt-get install --assume-yes \
+    --target-release "$POCKET_SUITE" livecd-rootfs
+else
+  # Remove and recreate the livecd-rootfs code we will be replacing with code
+  # in our current directory
+  lxc exec lp-$SERIES-${ARCH} -- rm --recursive --force /usr/share/livecd-rootfs
+  lxc exec lp-$SERIES-${ARCH} -- mkdir --parents /usr/share/livecd-rootfs
+  # Old LXCs don't have recursive push... so we tar and untar instead.
+  ls --all -l
+  tar --create --gzip --verbose --file $OLD_FASHIONED_BUILD_CACHE/livecd-rootfs.tar.gz .
+  lxc file push $OLD_FASHIONED_BUILD_CACHE/livecd-rootfs.tar.gz lp-$SERIES-${ARCH}/usr/share/livecd-rootfs/
+  lxc exec lp-$SERIES-${ARCH} -- tar --extract --gzip --verbose --file /usr/share/livecd-rootfs/livecd-rootfs.tar.gz -C /usr/share/livecd-rootfs/
+  # remove the tarball as it is no longer needed
+  lxc exec lp-$SERIES-${ARCH} -- rm --verbose /usr/share/livecd-rootfs/livecd-rootfs.tar.gz
+fi
 
 # If the $HOME/live-build directory exists, copy it into the LXD container overwriting the installed live-build scripts
 if [ -d $HOME/live-build ] ; then
