@@ -115,6 +115,7 @@ AWS_INSTANCE_TYPE="m5.large"
 AWS_AMI_OWNER=099720109477
 AWS_KEYPAIR_NAME=$USER
 AWS_ARM_BUILD=false
+CHROOT_CACHE=""
 
 # MULTIPASS/LXD SPECIFIC DEFAULTS
 LOCAL_VM_DISK_SIZE=50G
@@ -231,6 +232,10 @@ usage: $0 [<options>] -- --series <series> [<ubuntu-old-fashioned-options>]
 
     --chroot-archive <archive>              A local archive used to perform the build.
                                             Value: ${CHROOT_ARCHIVE:-None}
+
+    --chroot-cache                          Cache the Launchpad buildd chroot tarball for the build's
+                                            series in ${XDG_CACHE_HOME:-$HOME/.cache}/ubuntu-old-fashioned
+                                            and reuse it until Launchpad's chroot hash changes.
 
     --build-provider <provider>             The provider used to build the image.
                                             This can be multipass, aws, azure or gce.
@@ -403,6 +408,9 @@ do
       CHROOT_ARCHIVE="$2"
       shift
       ;;
+    --chroot-cache)
+      CHROOT_CACHE=true
+      ;;
     --build-provider)
       BUILD_PROVIDER="$2"
       shift
@@ -550,6 +558,13 @@ then
   exit 255
 fi
 
+# The series value itself, e.g. for --chroot-cache; prefer the inferred one.
+SERIES=${series_flag#--series }
+if [ -z "$SERIES" ]
+then
+  SERIES=$(echo -- $@ | sed -n 's/.*--series \([^ ]*\).*/\1/p')
+fi
+
 ############ Where the Magic Happens ##########################################
 
 # Let's build all the things!
@@ -564,9 +579,68 @@ function cleanup {
   build-provider-destroy $bartender_name
 }
 
+# Ensure the Launchpad buildd chroot tarball for <series>/<arch> is cached
+# locally; refreshed when Launchpad's chroot hash (plain REST GET) no longer
+# matches the stamp, instead of old-fashioned's bare [ -f ] reuse. The cached
+# tarball is handed to the build through the --chroot-archive path below.
+function ensure-chroot-cache {
+  local series=$1
+  local arch=$2
+  local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/ubuntu-old-fashioned"
+  local cache_file="$cache_dir/chroot-ubuntu-$series-$arch.tar.bz"
+  local cache_stamp="$cache_file.hash"
+  local das_api="https://api.launchpad.net/devel/ubuntu/$series/$arch"
+  local hash url tool
+
+  for tool in curl jq wget
+  do
+    if ! command -v $tool &>/dev/null
+    then
+      echo "error: $tool was not found in PATH" >&2
+      exit 255
+    fi
+  done
+  mkdir -p "$cache_dir"
+  hash=$(curl -fsS --max-time 60 "$das_api?ws.op=getChrootHash&pocket=Release&image_type=Chroot%20tarball" | jq -r .sha256 2>/dev/null)
+  if [ -z "$hash" ]
+  then
+    echo "error: could not read the Launchpad chroot hash for $series/$arch" >&2
+    exit 255
+  fi
+  if [ -f "$cache_file" ] && [ "$hash" = "$(cat "$cache_stamp" 2>/dev/null)" ]
+  then
+    echo "Reusing cached Launchpad chroot tarball $cache_file"
+  else
+    echo "Caching Launchpad chroot tarball for $series/$arch (first run downloads ~200MB)..."
+    url=$(curl -fsS --max-time 60 "$das_api?ws.op=getChrootURL" | jq -r . 2>/dev/null)
+    if [ -z "$url" ]
+    then
+      echo "error: could not read the Launchpad chroot URL for $series/$arch" >&2
+      exit 255
+    fi
+    wget -O "$cache_file" "$url" && echo "$hash" > "$cache_stamp"
+  fi
+  CHROOT_ARCHIVE="$cache_file"
+}
+
 if [ "$SHOULD_CLEANUP" = "YES" ]
 then
   trap cleanup EXIT
+fi
+
+# Resolved before the VM is created so the tarball can ride the ingredients;
+# it must match the arch of the VM the build runs on: the instance arch for
+# aws (AWS_ARCH), the image arch for gce/azure (baked into the image
+# reference), the host arch for multipass/lxd (their images follow the host).
+if [ -n "$CHROOT_CACHE" ]
+then
+  case "$BUILD_PROVIDER" in
+    aws) chroot_cache_arch=$AWS_ARCH ;;
+    gce) case "$GCE_IMAGE_FAMILY" in *arm64*) chroot_cache_arch=arm64 ;; *) chroot_cache_arch=amd64 ;; esac ;;
+    azure) case "$AZURE_URN" in *arm*) chroot_cache_arch=arm64 ;; *) chroot_cache_arch=amd64 ;; esac ;;
+    *) chroot_cache_arch=$(dpkg --print-architecture) ;;
+  esac
+  ensure-chroot-cache "$SERIES" "$chroot_cache_arch"
 fi
 
 build-provider-create $bartender_name
